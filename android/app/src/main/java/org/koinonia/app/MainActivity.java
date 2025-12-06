@@ -1,0 +1,5 @@
+package org.koinonia.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}
