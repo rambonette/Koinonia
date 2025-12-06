@@ -1,7 +1,12 @@
+import React from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import Home from './pages/Home';
+
+import { ServicesProvider } from './contexts/ServicesContext';
+import { useDeepLink } from './hooks/useDeepLink';
+import HomePage from './pages/HomePage';
+import GroceryListPage from './pages/GroceryListPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -35,19 +40,36 @@ import './theme/variables.css';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
+/**
+ * AppContent component with routing and deep link handling
+ * Must be inside ServicesProvider to access services
+ */
+const AppContent: React.FC = () => {
+  useDeepLink(); // Initialize deep link handling
+
+  return (
     <IonReactRouter>
       <IonRouterOutlet>
-        <Route exact path="/home">
-          <Home />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/home" />
-        </Route>
+        <Route path="/home" component={HomePage} exact />
+        <Route path="/list/:roomId" component={GroceryListPage} exact />
+        <Redirect exact from="/" to="/home" />
       </IonRouterOutlet>
     </IonReactRouter>
-  </IonApp>
-);
+  );
+};
+
+/**
+ * Main App component
+ * Wraps everything in ServicesProvider for dependency injection
+ */
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <ServicesProvider>
+        <AppContent />
+      </ServicesProvider>
+    </IonApp>
+  );
+};
 
 export default App;
