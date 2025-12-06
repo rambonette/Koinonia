@@ -4,12 +4,18 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test.e2e": "cypress run",
-    "test.unit": "vitest",
-    "lint": "eslint"
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "cypress run",
+    "test:unit": "vitest",
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "ionic:serve": "vite",
+    "ionic:build": "tsc && vite build"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
@@ -57,5 +63,17 @@
     "vite": "^5.0.0",
     "vitest": "^0.34.6"
   },
-  "description": "An Ionic project"
+  "description": "Parallel grocery shopping with real-time P2P sync",
+  "keywords": [
+    "grocery",
+    "shopping",
+    "p2p",
+    "crdt",
+    "webrtc",
+    "ionic",
+    "yjs",
+    "offline-first"
+  ],
+  "author": "rambonette <ramiro.cordero.b@gmail.com>",
+  "license": "GPL-3.0"
 }
