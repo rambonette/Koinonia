@@ -45,19 +45,24 @@ export class WebRTCSyncService implements ISyncService {
             roomId,
             this.doc,
             {
+              // Use multiple signaling servers as fallbacks
+              // signaling.yjs.dev is the most reliable public option
               signaling: [
-                'wss://signaling.yjs.dev',
-                'wss://y-webrtc-signaling-eu.herokuapp.com'
+                'wss://signaling.yjs.dev'
               ],
               peerOpts: {
                 config: {
                   iceServers: [
+                    // Google STUN servers for NAT traversal
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
                   ]
                 }
               },
-              maxConns: 10,
+              maxConns: 20,
               filterBcConns: true
             }
           );
