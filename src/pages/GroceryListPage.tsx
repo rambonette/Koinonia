@@ -12,7 +12,6 @@ import {
   IonInput,
   IonButton,
   IonButtons,
-  IonBadge,
   IonIcon,
   IonSpinner,
   IonFab,
@@ -21,26 +20,32 @@ import {
   IonText,
   IonItemSliding,
   IonItemOptions,
-  IonItemOption
+  IonItemOption,
+  IonChip,
+  IonToast
 } from '@ionic/react';
 import {
   peopleOutline,
-  cloudDoneOutline,
-  cloudOfflineOutline,
   shareOutline,
   addOutline,
-  trashOutline
+  trashOutline,
+  cloudOutline,
+  cloudOfflineOutline,
+  arrowBackOutline
 } from 'ionicons/icons';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
 import { Share } from '@capacitor/share';
+import { recentListsUtils } from '../utils/recentLists';
 
 const GroceryListPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  const history = useHistory();
   const { deepLink } = useServices();
   const [newItemName, setNewItemName] = useState('');
   const [showActionSheet, setShowActionSheet] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const {
     items,
@@ -62,16 +67,32 @@ const GroceryListPage: React.FC = () => {
 
   const handleShare = async () => {
     const deepLinkUrl = deepLink.generateDeepLink(roomId);
+    const shareText = `Join my shopping list on Koinonia! Code: ${roomId}\n${deepLinkUrl}`;
 
     try {
-      await Share.share({
-        title: 'Join my shopping list',
-        text: `Join my shopping list on Koinonia! Code: ${roomId}`,
-        url: deepLinkUrl,
-        dialogTitle: 'Share shopping list'
-      });
+      // Check if Share API is available
+      const canShare = await Share.canShare();
+
+      if (canShare.value) {
+        await Share.share({
+          title: 'Join my shopping list',
+          text: shareText,
+          dialogTitle: 'Share shopping list'
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareText);
+        setToastMessage('Link copied to clipboard!');
+      }
     } catch (error) {
       console.error('Error sharing:', error);
+      // Fallback: try clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setToastMessage('Link copied to clipboard!');
+      } catch {
+        setToastMessage(`Share code: ${roomId}`);
+      }
     }
   };
 
@@ -92,31 +113,45 @@ const GroceryListPage: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Shopping List</IonTitle>
-          <IonButtons slot="end">
-            <IonBadge color={connected ? 'success' : 'danger'}>
-              <IonIcon icon={connected ? cloudDoneOutline : cloudOfflineOutline} />
-            </IonBadge>
-            <IonBadge color="primary">
-              <IonIcon icon={peopleOutline} /> {peerCount}
-            </IonBadge>
-            <IonButton onClick={handleShare}>
-              <IonIcon icon={shareOutline} />
+          <IonButtons slot="start">
+            <IonButton onClick={() => history.goBack()}>
+              <IonIcon slot="icon-only" icon={arrowBackOutline} />
             </IonButton>
           </IonButtons>
+          <IonTitle>Shopping List</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={handleShare}>
+              <IonIcon slot="icon-only" icon={shareOutline} />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+        <IonToolbar color="light">
+          <IonChip slot="start" color={connected ? 'success' : 'warning'} outline>
+            <IonIcon icon={connected ? cloudOutline : cloudOfflineOutline} />
+            <IonLabel>{connected ? 'Connected' : 'Connecting...'}</IonLabel>
+          </IonChip>
+          <IonChip slot="start" color={peerCount > 0 ? 'success' : 'medium'} outline>
+            <IonIcon icon={peopleOutline} />
+            <IonLabel>{peerCount} {peerCount === 1 ? 'peer' : 'peers'}</IonLabel>
+          </IonChip>
         </IonToolbar>
       </IonHeader>
 
       <IonContent>
         {/* Add item input */}
-        <IonItem>
+        <IonItem lines="full">
           <IonInput
             value={newItemName}
             placeholder="Add new item..."
             onIonInput={e => setNewItemName(e.detail.value || '')}
             onKeyPress={e => e.key === 'Enter' && handleAddItem()}
           />
-          <IonButton onClick={handleAddItem} disabled={!newItemName.trim()}>
+          <IonButton
+            slot="end"
+            onClick={handleAddItem}
+            disabled={!newItemName.trim()}
+            fill="solid"
+          >
             <IonIcon icon={addOutline} />
           </IonButton>
         </IonItem>
@@ -163,7 +198,7 @@ const GroceryListPage: React.FC = () => {
           </IonFab>
         )}
 
-        {/* Action sheet for clear list */}
+        {/* Action sheet for list actions */}
         <IonActionSheet
           isOpen={showActionSheet}
           onDidDismiss={() => setShowActionSheet(false)}
@@ -176,10 +211,28 @@ const GroceryListPage: React.FC = () => {
               }
             },
             {
+              text: 'Delete List & Go Back',
+              role: 'destructive',
+              handler: () => {
+                clearList();
+                recentListsUtils.removeRecentList(roomId);
+                history.push('/home');
+              }
+            },
+            {
               text: 'Cancel',
               role: 'cancel'
             }
           ]}
+        />
+
+        {/* Toast for share feedback */}
+        <IonToast
+          isOpen={!!toastMessage}
+          message={toastMessage}
+          duration={2000}
+          onDidDismiss={() => setToastMessage('')}
+          position="bottom"
         />
       </IonContent>
     </IonPage>

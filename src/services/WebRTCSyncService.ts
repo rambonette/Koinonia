@@ -2,24 +2,27 @@ import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { ISyncService } from '../interfaces/ISyncService';
+import { ISettingsService } from '../interfaces/ISettingsService';
 
 /**
  * WebRTC-based P2P synchronization service with offline persistence
  * Handles peer discovery and real-time data synchronization
  * Uses IndexedDB for offline storage
- * Uses public signaling servers and STUN for NAT traversal
+ * Uses configurable signaling servers and ICE servers from settings
  */
 export class WebRTCSyncService implements ISyncService {
   private provider: WebrtcProvider | null = null;
   private persistence: IndexeddbPersistence | null = null;
   private doc: Y.Doc;
+  private settings: ISettingsService;
   private connected: boolean = false;
   private peerCount: number = 0;
   private connectionCallbacks: Set<(connected: boolean) => void>;
   private peerCallbacks: Set<(count: number) => void>;
 
-  constructor(doc: Y.Doc) {
+  constructor(doc: Y.Doc, settings: ISettingsService) {
     this.doc = doc;
+    this.settings = settings;
     this.connectionCallbacks = new Set();
     this.peerCallbacks = new Set();
   }
@@ -40,24 +43,18 @@ export class WebRTCSyncService implements ISyncService {
         this.persistence.whenSynced.then(() => {
           console.log('IndexedDB loaded, connecting to WebRTC...');
 
-          // Now connect to WebRTC peers
+          // Get server configuration from settings
+          const config = this.settings.getSettings();
+
+          // Now connect to WebRTC peers using configured servers
           this.provider = new WebrtcProvider(
             roomId,
             this.doc,
             {
-              // Multiple signaling servers for redundancy
-              // If one fails, others will be tried
-              signaling: [
-                'wss://y-webrtc-ckynwnzncc.now.sh',
-                'wss://y-webrtc.herokuapp.com'
-              ],
+              signaling: config.signalingServers,
               peerOpts: {
                 config: {
-                  iceServers: [
-                    // Google STUN servers for NAT traversal
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                  ]
+                  iceServers: config.iceServers
                 }
               },
               maxConns: 20,

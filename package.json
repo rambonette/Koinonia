@@ -15,7 +15,8 @@
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "ionic:serve": "vite",
-    "ionic:build": "tsc && vite build"
+    "ionic:build": "tsc && vite build",
+    "signaling": "PORT=4444 node node_modules/y-webrtc/bin/server.js"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
@@ -41,6 +42,7 @@
     "yjs": "^13.6.27"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "7.4.4",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.17.0",

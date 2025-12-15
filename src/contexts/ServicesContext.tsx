@@ -3,14 +3,17 @@ import * as Y from 'yjs';
 import { ISyncService } from '../interfaces/ISyncService';
 import { IStorageService } from '../interfaces/IStorageService';
 import { IDeepLinkService } from '../interfaces/IDeepLinkService';
+import { ISettingsService } from '../interfaces/ISettingsService';
 import { WebRTCSyncService } from '../services/WebRTCSyncService';
 import { YjsStorageService } from '../services/YjsStorageService';
 import { DeepLinkService } from '../services/DeepLinkService';
+import { SettingsService } from '../services/SettingsService';
 
 interface Services {
   sync: ISyncService;
   storage: IStorageService;
   deepLink: IDeepLinkService;
+  settings: ISettingsService;
   doc: Y.Doc;
 }
 
@@ -30,9 +33,13 @@ export const ServicesProvider: React.FC<ServicesProviderProps> = ({ children }) 
     // Create Yjs document (shared between services)
     const doc = new Y.Doc();
 
+    // Create settings service first (needed by sync service)
+    const settings = new SettingsService();
+
     return {
       doc,
-      sync: new WebRTCSyncService(doc),
+      settings,
+      sync: new WebRTCSyncService(doc, settings),
       storage: new YjsStorageService(doc),
       deepLink: new DeepLinkService()
     };

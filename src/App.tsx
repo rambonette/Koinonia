@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
 import { ServicesProvider } from './contexts/ServicesContext';
 import { useDeepLink } from './hooks/useDeepLink';
 import HomePage from './pages/HomePage';
 import GroceryListPage from './pages/GroceryListPage';
+import SettingsPage from './pages/SettingsPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -51,6 +54,7 @@ const AppContent: React.FC = () => {
     <IonReactRouter>
       <IonRouterOutlet>
         <Route path="/home" component={HomePage} exact />
+        <Route path="/settings" component={SettingsPage} exact />
         <Route path="/list/:roomId" component={GroceryListPage} exact />
         <Redirect exact from="/" to="/home" />
       </IonRouterOutlet>
@@ -63,6 +67,14 @@ const AppContent: React.FC = () => {
  * Wraps everything in ServicesProvider for dependency injection
  */
 const App: React.FC = () => {
+  useEffect(() => {
+    // Configure status bar for Android/iOS - don't overlay to avoid notch issues
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: false });
+      StatusBar.setStyle({ style: Style.Dark });
+    }
+  }, []);
+
   return (
     <IonApp>
       <ServicesProvider>

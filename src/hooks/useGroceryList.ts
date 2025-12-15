@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useServices } from '../contexts/ServicesContext';
 import { GroceryItem } from '../interfaces/IStorageService';
+import { recentListsUtils } from '../utils/recentLists';
 
 interface UseGroceryListResult {
   items: GroceryItem[];
@@ -32,6 +33,9 @@ export const useGroceryList = (roomId: string | null): UseGroceryListResult => {
       setLoading(false);
       return;
     }
+
+    // Add to recent lists
+    recentListsUtils.addRecentList(roomId);
 
     let mounted = true;
 
