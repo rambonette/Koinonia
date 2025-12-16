@@ -7,7 +7,7 @@ Public WebRTC signaling servers are unreliable and often down. The app needs a s
 
 1. **Start the signaling server** (in a separate terminal):
 ```bash
-PORT=4444 node node_modules/y-webrtc/bin/server.js
+npm run signaling
 ```
 
 2. **Start the app**:
