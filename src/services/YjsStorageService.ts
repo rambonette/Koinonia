@@ -4,18 +4,18 @@ import { ISyncService } from '../interfaces/ISyncService';
 
 /**
  * Yjs-based storage service implementation
- * Uses Y.Array for CRDT-based grocery list storage
- * Ensures conflict-free concurrent editing
+ * Uses Y.Map for each item to enable property-level conflict resolution
+ * Concurrent edits to the same property use LWW (last-write-wins)
  */
 export class YjsStorageService implements IStorageService {
   private doc: Y.Doc;
-  private items: Y.Array<GroceryItem>;
+  private itemsMap: Y.Map<Y.Map<unknown>>;
   private observers: Set<(items: GroceryItem[]) => void>;
   private itemsObserver: () => void;
 
   constructor(syncService: ISyncService) {
     this.doc = syncService.getDoc();
-    this.items = this.doc.getArray<GroceryItem>('groceryItems');
+    this.itemsMap = this.doc.getMap<Y.Map<unknown>>('groceryItemsV2');
     this.observers = new Set();
 
     // Set up observer for changes
@@ -23,66 +23,72 @@ export class YjsStorageService implements IStorageService {
       const currentItems = this.getItems();
       this.observers.forEach(callback => callback(currentItems));
     };
-    this.items.observe(this.itemsObserver);
+    this.itemsMap.observeDeep(this.itemsObserver);
 
     // Listen for doc changes (when switching rooms)
     syncService.onDocChange((newDoc) => {
-      // Unobserve old array
-      this.items.unobserve(this.itemsObserver);
+      // Unobserve old map
+      this.itemsMap.unobserveDeep(this.itemsObserver);
 
       // Rebind to new doc
       this.doc = newDoc;
-      this.items = this.doc.getArray<GroceryItem>('groceryItems');
-      this.items.observe(this.itemsObserver);
+      this.itemsMap = this.doc.getMap<Y.Map<unknown>>('groceryItemsV2');
+      this.itemsMap.observeDeep(this.itemsObserver);
 
       // Notify observers of the change
       this.observers.forEach(callback => callback(this.getItems()));
     });
   }
 
+  private yMapToItem(id: string, yMap: Y.Map<unknown>): GroceryItem {
+    return {
+      id,
+      name: yMap.get('name') as string,
+      checked: yMap.get('checked') as boolean,
+      addedAt: yMap.get('addedAt') as number,
+      addedBy: yMap.get('addedBy') as string | undefined,
+    };
+  }
+
   getItems(): GroceryItem[] {
-    return this.items.toArray();
+    const items: GroceryItem[] = [];
+    this.itemsMap.forEach((yMap, id) => {
+      items.push(this.yMapToItem(id, yMap));
+    });
+    // Sort by addedAt to maintain consistent ordering
+    return items.sort((a, b) => a.addedAt - b.addedAt);
   }
 
   addItem(item: Omit<GroceryItem, 'id' | 'addedAt'>): void {
-    const newItem: GroceryItem = {
-      ...item,
-      id: crypto.randomUUID(),
-      addedAt: Date.now(),
-    };
+    const id = crypto.randomUUID();
+    const yMap = new Y.Map<unknown>();
 
-    this.items.push([newItem]);
+    this.doc.transact(() => {
+      yMap.set('name', item.name);
+      yMap.set('checked', item.checked);
+      yMap.set('addedAt', Date.now());
+      if (item.addedBy) {
+        yMap.set('addedBy', item.addedBy);
+      }
+      this.itemsMap.set(id, yMap);
+    });
   }
 
   toggleItem(itemId: string): void {
-    const items = this.getItems();
-    const index = items.findIndex(item => item.id === itemId);
+    const yMap = this.itemsMap.get(itemId);
 
-    if (index === -1) {
+    if (!yMap) {
       console.warn(`Item ${itemId} not found`);
       return;
     }
 
-    const item = items[index];
-
-    // Yjs requires delete + insert for updates
-    // Using transaction ensures atomicity
-    this.doc.transact(() => {
-      this.items.delete(index, 1);
-      this.items.insert(index, [{
-        ...item,
-        checked: !item.checked
-      }]);
-    });
+    // Direct property update - LWW handles conflicts
+    const currentChecked = yMap.get('checked') as boolean;
+    yMap.set('checked', !currentChecked);
   }
 
   removeItem(itemId: string): void {
-    const items = this.getItems();
-    const index = items.findIndex(item => item.id === itemId);
-
-    if (index !== -1) {
-      this.items.delete(index, 1);
-    }
+    this.itemsMap.delete(itemId);
   }
 
   onChange(callback: (items: GroceryItem[]) => void): () => void {
@@ -95,6 +101,9 @@ export class YjsStorageService implements IStorageService {
   }
 
   clear(): void {
-    this.items.delete(0, this.items.length);
+    this.doc.transact(() => {
+      const keys = Array.from(this.itemsMap.keys());
+      keys.forEach(key => this.itemsMap.delete(key));
+    });
   }
 }
