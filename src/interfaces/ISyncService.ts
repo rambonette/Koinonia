@@ -1,8 +1,21 @@
+import * as Y from 'yjs';
+
 /**
  * Sync service interface following Dependency Inversion Principle
  * Allows swapping implementations (Yjs, Gun, Mock) without changing consumers
  */
 export interface ISyncService {
+  /**
+   * Get the current Yjs document for the connected room
+   */
+  getDoc(): Y.Doc;
+
+  /**
+   * Subscribe to document changes (when switching rooms)
+   * @param callback - Called with new doc when room changes
+   * @returns Unsubscribe function
+   */
+  onDocChange(callback: (doc: Y.Doc) => void): () => void;
   /**
    * Connect to a P2P room
    * @param roomId - Unique room identifier

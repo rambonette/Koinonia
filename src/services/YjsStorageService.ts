@@ -1,5 +1,6 @@
 import * as Y from 'yjs';
 import { IStorageService, GroceryItem } from '../interfaces/IStorageService';
+import { ISyncService } from '../interfaces/ISyncService';
 
 /**
  * Yjs-based storage service implementation
@@ -10,16 +11,32 @@ export class YjsStorageService implements IStorageService {
   private doc: Y.Doc;
   private items: Y.Array<GroceryItem>;
   private observers: Set<(items: GroceryItem[]) => void>;
+  private itemsObserver: () => void;
 
-  constructor(doc: Y.Doc) {
-    this.doc = doc;
+  constructor(syncService: ISyncService) {
+    this.doc = syncService.getDoc();
     this.items = this.doc.getArray<GroceryItem>('groceryItems');
     this.observers = new Set();
 
     // Set up observer for changes
-    this.items.observe(() => {
+    this.itemsObserver = () => {
       const currentItems = this.getItems();
       this.observers.forEach(callback => callback(currentItems));
+    };
+    this.items.observe(this.itemsObserver);
+
+    // Listen for doc changes (when switching rooms)
+    syncService.onDocChange((newDoc) => {
+      // Unobserve old array
+      this.items.unobserve(this.itemsObserver);
+
+      // Rebind to new doc
+      this.doc = newDoc;
+      this.items = this.doc.getArray<GroceryItem>('groceryItems');
+      this.items.observe(this.itemsObserver);
+
+      // Notify observers of the change
+      this.observers.forEach(callback => callback(this.getItems()));
     });
   }
 

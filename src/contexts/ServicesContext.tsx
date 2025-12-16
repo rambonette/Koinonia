@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useMemo, ReactNode } from 'react';
-import * as Y from 'yjs';
 import { ISyncService } from '../interfaces/ISyncService';
 import { IStorageService } from '../interfaces/IStorageService';
 import { IDeepLinkService } from '../interfaces/IDeepLinkService';
@@ -14,7 +13,6 @@ interface Services {
   storage: IStorageService;
   deepLink: IDeepLinkService;
   settings: ISettingsService;
-  doc: Y.Doc;
 }
 
 const ServicesContext = createContext<Services | null>(null);
@@ -30,17 +28,19 @@ interface ServicesProviderProps {
  */
 export const ServicesProvider: React.FC<ServicesProviderProps> = ({ children }) => {
   const services = useMemo(() => {
-    // Create Yjs document (shared between services)
-    const doc = new Y.Doc();
-
     // Create settings service first (needed by sync service)
     const settings = new SettingsService();
 
+    // Sync service creates and manages Y.Doc per room
+    const sync = new WebRTCSyncService(settings);
+
+    // Storage service listens to sync service for doc changes
+    const storage = new YjsStorageService(sync);
+
     return {
-      doc,
       settings,
-      sync: new WebRTCSyncService(doc, settings),
-      storage: new YjsStorageService(doc),
+      sync,
+      storage,
       deepLink: new DeepLinkService()
     };
   }, []); // Empty dependency array - create once and never recreate
