@@ -171,7 +171,8 @@ Open an issue describing:
 
 The `docs/` folder contains additional technical documentation:
 
-- [docs/SIGNALING.md](docs/SIGNALING.md) - Signaling server setup and deployment
+- [docs/SIGNALING.md](docs/SIGNALING.md) - Signaling server local development
+- [docs/KOINONIA_SERVER.md](docs/KOINONIA_SERVER.md) - Production server deployment (Docker + SSL)
 - [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) - Original implementation plan (historical reference)
 
 ## Questions?

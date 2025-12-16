@@ -25,25 +25,23 @@ npm start
 
 ## Production Deployment
 
-### Option 1: Deploy Your Own Server
+See [KOINONIA_SERVER.md](KOINONIA_SERVER.md) for full Docker Compose setup with:
+- nginx reverse proxy
+- Let's Encrypt SSL with auto-renewal
+- Same y-webrtc signaling server as development
+
+### Quick Options
 
 Deploy `y-webrtc` signaling server to:
+- Your own VPS with Docker (recommended - see KOINONIA_SERVER.md)
 - Fly.io (free tier)
 - Railway (free tier)
-- Your own VPS
 - Render (free tier)
 
-Then update `src/services/WebRTCSyncService.ts`:
+Then update `src/services/SettingsService.ts` production signaling servers:
 ```typescript
-signaling: ['wss://your-server.fly.dev']
+signalingServers: ['wss://your-server.com']
 ```
-
-### Option 2: Use Alternative Provider
-
-Consider switching to:
-- **Hocuspocus** (WebSocket-based, more reliable)
-- **y-sweet** (managed Yjs provider)
-- **PeerJS** server
 
 ## Sources
 - [y-webrtc GitHub](https://github.com/yjs/y-webrtc)

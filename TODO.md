@@ -1,5 +1,9 @@
 ### TODO
 
+* create koinonia public wss server codebase
+* deploy koinonia server instance
+* add/verify deeplink support and sharing
+  * update docs on how to enable deeplink support manaully in android since we are not verified nor trusted by anyone.
 * integrate an automated versioning tool - use date versioning 
 * automated github actions pipelines to build stable releases from master branch and nightly releases from develop branch.
 * study how to deploy to fdroid

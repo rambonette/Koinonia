@@ -21,12 +21,17 @@ const isDevelopment = (): boolean => {
  * Get default settings based on environment
  */
 const getDefaultSettings = (): AppSettings => {
+  const defaultIceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ];
+
   const devSettings: AppSettings = {
     signalingServers: ['ws://localhost:4444'],
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+    iceServers: defaultIceServers
   };
 
   const prodSettings: AppSettings = {
@@ -35,11 +40,7 @@ const getDefaultSettings = (): AppSettings => {
       'wss://y-webrtc-signaling-eu.herokuapp.com',
       'wss://y-webrtc-signaling-us.herokuapp.com'
     ],
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' }
-    ]
+    iceServers: defaultIceServers
   };
 
   return isDevelopment() ? devSettings : prodSettings;
