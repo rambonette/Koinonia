@@ -78,15 +78,23 @@ export class WebRTCSyncService implements ISyncService {
             }
           );
 
-          // Listen for peer changes - indicates signaling server is reachable
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          this.provider.on('peers', (event: any) => {
-            // When peers event fires, signaling server is working
+          // Use awareness API for accurate peer tracking
+          // Awareness correctly handles disconnections (30s timeout for inactive clients)
+          this.provider.awareness.on('change', () => {
+            // Guard against callback firing during destroy
+            if (!this.provider) return;
+
+            // getStates() returns a Map of all connected clients including self
+            // Subtract 1 to exclude self from peer count
+            const states = this.provider.awareness.getStates();
+            this.peerCount = Math.max(0, states.size - 1);
+            this.peerCallbacks.forEach(cb => cb(this.peerCount));
+          });
+
+          // Listen for peers event for connection status (signaling server is reachable)
+          this.provider.on('peers', () => {
             this.connected = true;
             this.connectionCallbacks.forEach(cb => cb(this.connected));
-
-            this.peerCount = event.webrtcPeers ? event.webrtcPeers.length : 0;
-            this.peerCallbacks.forEach(cb => cb(this.peerCount));
           });
 
           // Listen for sync status - indicates successful data synchronization
