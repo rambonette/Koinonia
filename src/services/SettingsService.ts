@@ -1,21 +1,13 @@
+import { Capacitor } from '@capacitor/core';
 import { ISettingsService, AppSettings } from '../interfaces/ISettingsService';
 
 const STORAGE_KEY = 'koinonia-settings';
 
 /**
  * Determines if we're in development mode
- * (running on localhost or dev server)
+ * Web platform = development (ionic serve), native = production
  */
-const isDevelopment = (): boolean => {
-  if (typeof window === 'undefined') return false;
-
-  const hostname = window.location.hostname;
-  return hostname === 'localhost' ||
-         hostname === '127.0.0.1' ||
-         hostname.startsWith('192.168.') ||
-         hostname.startsWith('10.') ||
-         import.meta.env.DEV;
-};
+const isDevelopment = (): boolean => !Capacitor.isNativePlatform();
 
 /**
  * Get default settings based on environment
