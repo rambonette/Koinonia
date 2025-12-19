@@ -36,6 +36,7 @@ const getDefaultSettings = (): AppSettings => {
 
   const prodSettings: AppSettings = {
     signalingServers: [
+      'https://koinonia-wss.e-cloud.ch',
       'wss://signaling.yjs.dev',
       'wss://y-webrtc-signaling-eu.herokuapp.com',
       'wss://y-webrtc-signaling-us.herokuapp.com'
