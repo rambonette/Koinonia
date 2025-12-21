@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -19,7 +19,8 @@ import {
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
-  IonIcon
+  IonIcon,
+  useIonViewWillEnter
 } from '@ionic/react';
 import { timeOutline, trashOutline, settingsOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
@@ -30,10 +31,10 @@ const HomePage: React.FC = () => {
   const [joinCode, setJoinCode] = useState('');
   const [recentLists, setRecentLists] = useState<RecentList[]>([]);
 
-  useEffect(() => {
-    // Load recent lists on mount
+  useIonViewWillEnter(() => {
+    // Load recent lists every time the page becomes visible
     setRecentLists(recentListsUtils.getRecentLists());
-  }, []);
+  });
 
   const createNewList = () => {
     const roomId = crypto.randomUUID();
