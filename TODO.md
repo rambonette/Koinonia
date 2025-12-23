@@ -1,6 +1,5 @@
 ### TODO
 
-* share list by creating qrcode and adding by scanning qrcode: has to be done with a library that does not use propietary code - i know some qrcode scanners for capcitor leverage google play services which are not always there if you consider pure lineageos.
 * import list from plain text - has to be one entry per line.
 * add/verify deeplink support and sharing
 * update docs on how to enable deeplink support manaully in android since we are not verified nor trusted by anyone.
@@ -10,6 +9,7 @@
 
 ### DONE
 
+* share list by creating qrcode and adding by scanning qrcode: has to be done with a library that does not use propietary code - i know some qrcode scanners for capcitor leverage google play services which are not always there if you consider pure lineageos.
 * add the ability to edit entries - swipe gesture will display also an edit option as well as the already existing trash bin
 * checked items should go at the bottom of the list
 * if someone disconnects the counter doesn't go down - if it reconnects the counter goes up een if its the same client 
