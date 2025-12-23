@@ -51,6 +51,7 @@ jobs:
         uses: coturiv/setup-ionic@v2
         with:
           java-version: 17
+          capacitor-version: 7
 
       # 3. INSTALL DEPENDENCIES
       - name: Install dependencies
