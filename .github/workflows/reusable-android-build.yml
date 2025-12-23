@@ -170,31 +170,49 @@ jobs:
           fi
           echo "All secrets are set ✓"
 
-      # 10. DECODE KEYSTORE
-      - name: Decode Android keystore
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
-
-      # 10. BUILD SIGNED APK
-      - name: Build signed APK
-        id: build_apk
-        env:
-          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # 10. BUILD UNSIGNED APK
+      - name: Build unsigned APK
         run: |
           cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease --stacktrace
 
-          # Find the generated APK
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          FULL_PATH="${{ github.workspace }}/android/$APK_PATH"
+      # 11. DECODE KEYSTORE
+      - name: Decode Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
 
-          echo "apk_path=$FULL_PATH" >> $GITHUB_OUTPUT
-          echo "Built APK: $FULL_PATH"
-          ls -lh "$FULL_PATH"
+      # 12. SIGN APK
+      - name: Sign APK with jarsigner
+        id: build_apk
+        run: |
+          # Find the unsigned APK
+          UNSIGNED_APK=$(find android/app/build/outputs/apk/release -name "*-unsigned.apk" -o -name "*-release.apk" | head -n 1)
+
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "Error: Could not find APK"
+            find android/app/build/outputs/apk/release -type f
+            exit 1
+          fi
+
+          echo "Found APK: $UNSIGNED_APK"
+
+          # Sign the APK
+          jarsigner -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore ${{ github.workspace }}/release.keystore \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            "$UNSIGNED_APK" \
+            "${{ secrets.ANDROID_KEY_ALIAS }}"
+
+          # Verify signature
+          jarsigner -verify -verbose "$UNSIGNED_APK"
+
+          echo "apk_path=$UNSIGNED_APK" >> $GITHUB_OUTPUT
+          echo "Signed APK: $UNSIGNED_APK"
+          ls -lh "$UNSIGNED_APK"
 
       # 11. RENAME APK
       - name: Rename APK
