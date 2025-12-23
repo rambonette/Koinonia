@@ -1,0 +1,68 @@
+name: Release Stable
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      create_release:
+        description: 'Create GitHub release?'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write  # Needed for creating releases and tags
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable-android-build.yml
+    with:
+      release_type: stable
+      tag_prefix: v
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ inputs.create_release }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: koinonia-${{ needs.build.outputs.version }}-release.apk
+          path: ./artifacts
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last stable release
+          LAST_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "${{ needs.build.outputs.tag }}" | head -n 1)
+
+          if [ -z "$LAST_TAG" ]; then
+            CHANGELOG="Initial release"
+          else
+            CHANGELOG=$(git log $LAST_TAG..HEAD --oneline --no-decorate)
+          fi
+
+          # Save to file for multiline handling
+          echo "$CHANGELOG" > changelog.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          name: Koinonia ${{ needs.build.outputs.version }}
+          body_path: changelog.txt
+          draft: false
+          prerelease: false
+          files: |
+            ./artifacts/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

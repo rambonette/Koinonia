@@ -1,0 +1,110 @@
+name: Release Nightly
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:  # Manual trigger for testing
+    inputs:
+      skip_release:
+        description: 'Skip GitHub release creation?'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  # Check if there are new commits since last nightly
+  check_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: check
+        run: |
+          # Get last nightly tag
+          LAST_NIGHTLY=$(git tag -l "develop-*" --sort=-v:refname | head -n 1)
+
+          if [ -z "$LAST_NIGHTLY" ]; then
+            echo "No previous nightly found, will build"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            # Check if there are commits since last nightly
+            COMMITS=$(git log $LAST_NIGHTLY..HEAD --oneline)
+
+            if [ -z "$COMMITS" ]; then
+              echo "No new commits since last nightly, skipping build"
+              echo "should_build=false" >> $GITHUB_OUTPUT
+            else
+              echo "New commits found, will build"
+              echo "should_build=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  build:
+    needs: check_changes
+    if: needs.check_changes.outputs.should_build == 'true'
+    uses: ./.github/workflows/reusable-android-build.yml
+    with:
+      release_type: nightly
+      tag_prefix: develop-
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  release:
+    needs: [check_changes, build]
+    runs-on: ubuntu-latest
+    if: |
+      needs.check_changes.outputs.should_build == 'true' &&
+      !inputs.skip_release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: koinonia-${{ needs.build.outputs.version }}-release.apk
+          path: ./artifacts
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last nightly
+          LAST_TAG=$(git tag -l "develop-*" --sort=-v:refname | grep -v "${{ needs.build.outputs.tag }}" | head -n 1)
+
+          if [ -z "$LAST_TAG" ]; then
+            CHANGELOG="Initial nightly release"
+          else
+            CHANGELOG=$(git log $LAST_TAG..HEAD --oneline --no-decorate)
+          fi
+
+          echo "$CHANGELOG" > changelog.txt
+
+      - name: Create GitHub Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          name: Koinonia Nightly ${{ needs.build.outputs.version }}
+          body_path: changelog.txt
+          draft: false
+          prerelease: true  # Mark as pre-release
+          files: |
+            ./artifacts/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

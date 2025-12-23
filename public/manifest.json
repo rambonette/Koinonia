@@ -1,6 +1,7 @@
 {
   "short_name": "Koinonia",
   "name": "Koinonia - Parallel Shopping",
+  "version": "0.0.1",
   "icons": [
     {
       "src": "../icons/icon-48.webp",

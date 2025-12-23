@@ -1,0 +1,189 @@
+name: Android Build (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      release_type:
+        required: true
+        type: string
+        description: 'stable or nightly'
+      tag_prefix:
+        required: true
+        type: string
+        description: 'Tag prefix (v or develop-)'
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+    outputs:
+      version:
+        description: "Generated version number"
+        value: ${{ jobs.build.outputs.version }}
+      apk_path:
+        description: "Path to signed APK"
+        value: ${{ jobs.build.outputs.apk_path }}
+      tag:
+        description: "Git tag name"
+        value: ${{ jobs.build.outputs.tag }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      apk_path: ${{ steps.build_apk.outputs.apk_path }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      # 1. CHECKOUT CODE
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tag querying
+
+      # 2. SETUP IONIC + NODE.JS
+      - name: Setup Ionic
+        uses: coturiv/setup-ionic@v1
+        with:
+          java-version: 17
+
+      # 3. INSTALL DEPENDENCIES
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. VERSION BUMPING (INLINE)
+      - name: Generate version
+        id: version
+        run: |
+          # Generate date components
+          YEAR=$(date +%Y)
+          MONTH=$(date +%m)
+          DAY=$(date +%d)
+          DATE_VERSION="${YEAR}.${MONTH}.${DAY}"
+
+          # Find existing build number for today
+          if [ "${{ inputs.release_type }}" == "nightly" ]; then
+            PATTERN="develop-${DATE_VERSION}.*"
+          else
+            PATTERN="v${DATE_VERSION}.*"
+          fi
+
+          # Query Git tags matching today's pattern
+          EXISTING_TAGS=$(git tag -l "$PATTERN" | sort -V)
+
+          # Extract highest build number (or default to 0)
+          if [ -z "$EXISTING_TAGS" ]; then
+            LAST_BUILD=0
+          else
+            # Extract last build number from tag like "v2025.12.23.2"
+            LAST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
+            LAST_BUILD=$(echo "$LAST_TAG" | sed -E 's/.*\.([0-9]+)$/\1/')
+          fi
+
+          # Increment build number
+          BUILD=$((LAST_BUILD + 1))
+          FULL_VERSION="${DATE_VERSION}.${BUILD}"
+
+          # Calculate Android versionCode (must be integer)
+          # Format: YYYYMMDDXXX where XXX is build number
+          VERSION_CODE=$(printf "%04d%02d%02d%03d" $YEAR $MONTH $DAY $BUILD)
+
+          # Create tag name
+          TAG="${{ inputs.tag_prefix }}${FULL_VERSION}"
+
+          # Output for subsequent steps
+          echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          echo "Generated version: $FULL_VERSION (code: $VERSION_CODE, tag: $TAG)"
+
+      # 5. UPDATE VERSION FILES
+      - name: Update version files
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VERSION_CODE="${{ steps.version.outputs.version_code }}"
+
+          # Update package.json
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" package.json
+
+          # Update android/app/build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION\"/" android/app/build.gradle
+
+          # Update public/manifest.json
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" public/manifest.json
+
+          echo "Updated version files to $VERSION"
+
+      # 6. COMMIT VERSION CHANGES
+      - name: Commit version changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json android/app/build.gradle public/manifest.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+          git push
+
+      # 7. WEB BUILD
+      - name: Build web assets
+        run: npm run build
+
+      # 8. CAPACITOR SYNC
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # 9. DECODE KEYSTORE
+      - name: Decode Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+
+      # 10. BUILD SIGNED APK
+      - name: Build signed APK
+        id: build_apk
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+          # Find the generated APK
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          FULL_PATH="${{ github.workspace }}/android/$APK_PATH"
+
+          echo "apk_path=$FULL_PATH" >> $GITHUB_OUTPUT
+          echo "Built APK: $FULL_PATH"
+          ls -lh "$FULL_PATH"
+
+      # 11. RENAME APK
+      - name: Rename APK
+        id: rename_apk
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          APK_NAME="koinonia-${VERSION}-release.apk"
+          cp "${{ steps.build_apk.outputs.apk_path }}" "${{ github.workspace }}/$APK_NAME"
+          echo "renamed_apk=${{ github.workspace }}/$APK_NAME" >> $GITHUB_OUTPUT
+          echo "Renamed APK to: $APK_NAME"
+
+      # 12. UPLOAD ARTIFACT
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: koinonia-${{ steps.version.outputs.version }}-release.apk
+          path: ${{ steps.rename_apk.outputs.renamed_apk }}
+          retention-days: 90
+
+      # 13. CREATE GIT TAG
+      - name: Create Git tag
+        run: |
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
