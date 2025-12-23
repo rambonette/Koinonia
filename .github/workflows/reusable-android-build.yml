@@ -46,11 +46,21 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for tag querying
 
-      # 2. SETUP IONIC ENVIRONMENT
-      - name: Setup Ionic
-        uses: coturiv/setup-ionic@v2
+      # 2. SETUP NODE.JS
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      # 3. INSTALL DEPENDENCIES
+      # 3. SETUP JAVA FOR ANDROID
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 4. INSTALL DEPENDENCIES
       - name: Install dependencies
         run: npm ci
 
