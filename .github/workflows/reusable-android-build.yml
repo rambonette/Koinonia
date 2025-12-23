@@ -186,7 +186,7 @@ jobs:
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --stacktrace
 
           # Find the generated APK
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
