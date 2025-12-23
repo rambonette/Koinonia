@@ -7,8 +7,8 @@ android {
         applicationId "org.koinonia.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 251223001
-        versionName "2025.12.23.1"
+        versionCode 251223002
+        versionName "2025.12.23.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
