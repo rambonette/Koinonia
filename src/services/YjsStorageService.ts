@@ -55,8 +55,13 @@ export class YjsStorageService implements IStorageService {
     this.itemsMap.forEach((yMap, id) => {
       items.push(this.yMapToItem(id, yMap));
     });
-    // Sort by addedAt to maintain consistent ordering
-    return items.sort((a, b) => a.addedAt - b.addedAt);
+    // Sort by checked state (unchecked first), then by addedAt to maintain consistent ordering
+    return items.sort((a, b) => {
+      if (a.checked === b.checked) {
+        return a.addedAt - b.addedAt;
+      }
+      return a.checked ? 1 : -1;
+    });
   }
 
   addItem(item: Omit<GroceryItem, 'id' | 'addedAt'>): void {
