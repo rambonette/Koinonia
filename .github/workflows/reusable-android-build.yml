@@ -46,13 +46,21 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for tag querying
 
-      # 2. SETUP IONIC + NODE.JS
-      - name: Setup Ionic
-        uses: coturiv/setup-ionic@v1
+      # 2. SETUP NODE.JS
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          java-version: 17
+          node-version: '20'
+          cache: 'npm'
 
-      # 3. INSTALL DEPENDENCIES
+      # 3. SETUP JAVA FOR ANDROID
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # 4. INSTALL DEPENDENCIES
       - name: Install dependencies
         run: npm ci
 
@@ -62,6 +70,7 @@ jobs:
         run: |
           # Generate date components
           YEAR=$(date +%Y)
+          YEAR_SHORT=$(date +%y)
           MONTH=$(date +%m)
           DAY=$(date +%d)
           DATE_VERSION="${YEAR}.${MONTH}.${DAY}"
@@ -90,8 +99,9 @@ jobs:
           FULL_VERSION="${DATE_VERSION}.${BUILD}"
 
           # Calculate Android versionCode (must be integer)
-          # Format: YYYYMMDDXXX where XXX is build number
-          VERSION_CODE=$(printf "%04d%02d%02d%03d" $YEAR $MONTH $DAY $BUILD)
+          # Format: YYMMDDXXX where XXX is build number
+          # Using 2-digit year to fit in 32-bit integer (max 2147483647)
+          VERSION_CODE=$(printf "%02d%02d%02d%03d" $YEAR_SHORT $MONTH $DAY $BUILD)
 
           # Create tag name
           TAG="${{ inputs.tag_prefix }}${FULL_VERSION}"
@@ -127,8 +137,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json android/app/build.gradle public/manifest.json
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
-          git push
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No version changes to commit (already up to date)"
+          else
+            git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+            git push
+          fi
 
       # 7. WEB BUILD
       - name: Build web assets
@@ -138,31 +154,83 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # 9. DECODE KEYSTORE
-      - name: Decode Android keystore
+      # 9. VERIFY SECRETS (DEBUG)
+      - name: Verify secrets are set
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+          echo "Checking if secrets are available..."
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_PASSWORD is empty!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ANDROID_KEY_ALIAS }}" ]; then
+            echo "ERROR: ANDROID_KEY_ALIAS is empty!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ANDROID_KEY_PASSWORD }}" ]; then
+            echo "ERROR: ANDROID_KEY_PASSWORD is empty!"
+            exit 1
+          fi
+          echo "All secrets are set ✓"
 
-      # 10. BUILD SIGNED APK
-      - name: Build signed APK
-        id: build_apk
-        env:
-          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # 10. BUILD UNSIGNED APK
+      - name: Build unsigned APK
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --stacktrace
 
-          # Find the generated APK
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          FULL_PATH="${{ github.workspace }}/android/$APK_PATH"
+      # 11. DECODE KEYSTORE
+      - name: Decode Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
 
-          echo "apk_path=$FULL_PATH" >> $GITHUB_OUTPUT
-          echo "Built APK: $FULL_PATH"
-          ls -lh "$FULL_PATH"
+      # 12. ALIGN & SIGN APK (Improved)
+      - name: Align and Sign APK
+        id: build_apk
+        run: |
+          # Find the unsigned APK
+          UNSIGNED_APK=$(find android/app/build/outputs/apk/release -name "*-unsigned.apk" -o -name "*-release.apk" | head -n 1)
+
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "Error: Could not find APK"
+            find android/app/build/outputs/apk/release -type f
+            exit 1
+          fi
+
+          echo "Found APK: $UNSIGNED_APK"
+
+          # Setup Android Build Tools
+          # GitHub Actions runners have Android SDK at $ANDROID_HOME or $ANDROID_SDK_ROOT
+          BUILD_TOOLS_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools"
+          # Get the latest version of build tools
+          LATEST_BUILD_TOOLS=$(ls -1 "$BUILD_TOOLS_DIR" | sort -V | tail -n 1)
+          TOOLS_PATH="$BUILD_TOOLS_DIR/$LATEST_BUILD_TOOLS"
+          echo "Using build-tools from: $TOOLS_PATH"
+
+          ALIGNED_APK="${UNSIGNED_APK%.*}-aligned.apk"
+          SIGNED_APK="${UNSIGNED_APK%.*}-signed.apk"
+
+          # 1. Zipalign (Optimizes the APK - MUST be done before signing for apksigner)
+          echo "Running zipalign..."
+          "$TOOLS_PATH/zipalign" -v -p 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+
+          # 2. Apksigner (V2+ Signing - Standard for modern Android)
+          echo "Signing with apksigner..."
+          "$TOOLS_PATH/apksigner" sign \
+            --ks "${{ github.workspace }}/release.keystore" \
+            --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out "$SIGNED_APK" \
+            "$ALIGNED_APK"
+
+          # Verify signature
+          echo "Verifying signature..."
+          "$TOOLS_PATH/apksigner" verify --verbose "$SIGNED_APK"
+
+          echo "apk_path=$SIGNED_APK" >> $GITHUB_OUTPUT
+          echo "Signed APK: $SIGNED_APK"
+          ls -lh "$SIGNED_APK"
 
       # 11. RENAME APK
       - name: Rename APK
