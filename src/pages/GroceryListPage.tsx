@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -22,7 +22,8 @@ import {
   IonItemOptions,
   IonItemOption,
   IonChip,
-  IonToast
+  IonToast,
+  IonAlert
 } from '@ionic/react';
 import {
   peopleOutline,
@@ -31,7 +32,8 @@ import {
   trashOutline,
   cloudOutline,
   cloudOfflineOutline,
-  arrowBackOutline
+  arrowBackOutline,
+  createOutline
 } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
@@ -46,6 +48,8 @@ const GroceryListPage: React.FC = () => {
   const [newItemName, setNewItemName] = useState('');
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [editingItem, setEditingItem] = useState<{ id: string; name: string } | null>(null);
+  const listRef = useRef<HTMLIonListElement>(null);
 
   const {
     items,
@@ -54,6 +58,7 @@ const GroceryListPage: React.FC = () => {
     loading,
     addItem,
     toggleItem,
+    updateItem,
     removeItem,
     clearList
   } = useGroceryList(roomId);
@@ -63,6 +68,19 @@ const GroceryListPage: React.FC = () => {
       addItem(newItemName.trim());
       setNewItemName('');
     }
+  };
+
+  const handleEditItem = (itemId: string, newName: string) => {
+    if (newName.trim()) {
+      updateItem(itemId, { name: newName.trim() });
+      setEditingItem(null);
+      listRef.current?.closeSlidingItems();
+    }
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    removeItem(itemId);
+    listRef.current?.closeSlidingItems();
   };
 
   const handleShare = async () => {
@@ -157,7 +175,7 @@ const GroceryListPage: React.FC = () => {
         </IonItem>
 
         {/* Grocery items list */}
-        <IonList>
+        <IonList ref={listRef}>
           {items.length === 0 ? (
             <IonItem>
               <IonLabel className="ion-text-center">
@@ -180,7 +198,10 @@ const GroceryListPage: React.FC = () => {
                   </IonLabel>
                 </IonItem>
                 <IonItemOptions side="end">
-                  <IonItemOption color="danger" onClick={() => removeItem(item.id)}>
+                  <IonItemOption color="primary" onClick={() => setEditingItem({ id: item.id, name: item.name })}>
+                    <IonIcon icon={createOutline} />
+                  </IonItemOption>
+                  <IonItemOption color="danger" onClick={() => handleRemoveItem(item.id)}>
                     <IonIcon icon={trashOutline} />
                   </IonItemOption>
                 </IonItemOptions>
@@ -197,6 +218,36 @@ const GroceryListPage: React.FC = () => {
             </IonFabButton>
           </IonFab>
         )}
+
+        {/* Edit Item Alert */}
+        <IonAlert
+          isOpen={!!editingItem}
+          header="Edit Item"
+          inputs={[
+            {
+              name: 'name',
+              type: 'text',
+              placeholder: 'Item name',
+              value: editingItem?.name
+            }
+          ]}
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              handler: () => setEditingItem(null)
+            },
+            {
+              text: 'Save',
+              handler: (data) => {
+                if (editingItem) {
+                  handleEditItem(editingItem.id, data.name);
+                }
+              }
+            }
+          ]}
+          onDidDismiss={() => setEditingItem(null)}
+        />
 
         {/* Action sheet for list actions */}
         <IonActionSheet

@@ -10,6 +10,7 @@ interface UseGroceryListResult {
   loading: boolean;
   addItem: (name: string) => void;
   toggleItem: (itemId: string) => void;
+  updateItem: (itemId: string, updates: Partial<Omit<GroceryItem, 'id' | 'addedAt'>>) => void;
   removeItem: (itemId: string) => void;
   clearList: () => void;
 }
@@ -95,6 +96,10 @@ export const useGroceryList = (roomId: string | null): UseGroceryListResult => {
     storage.toggleItem(itemId);
   }, [storage]);
 
+  const updateItem = useCallback((itemId: string, updates: Partial<Omit<GroceryItem, 'id' | 'addedAt'>>) => {
+    storage.updateItem(itemId, updates);
+  }, [storage]);
+
   const removeItem = useCallback((itemId: string) => {
     storage.removeItem(itemId);
   }, [storage]);
@@ -110,6 +115,7 @@ export const useGroceryList = (roomId: string | null): UseGroceryListResult => {
     loading,
     addItem,
     toggleItem,
+    updateItem,
     removeItem,
     clearList
   };

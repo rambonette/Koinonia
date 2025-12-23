@@ -87,6 +87,27 @@ export class YjsStorageService implements IStorageService {
     yMap.set('checked', !currentChecked);
   }
 
+  updateItem(itemId: string, updates: Partial<Omit<GroceryItem, 'id' | 'addedAt'>>): void {
+    const yMap = this.itemsMap.get(itemId);
+
+    if (!yMap) {
+      console.warn(`Item ${itemId} not found`);
+      return;
+    }
+
+    this.doc.transact(() => {
+      if (updates.name !== undefined) {
+        yMap.set('name', updates.name);
+      }
+      if (updates.checked !== undefined) {
+        yMap.set('checked', updates.checked);
+      }
+      if (updates.addedBy !== undefined) {
+        yMap.set('addedBy', updates.addedBy);
+      }
+    });
+  }
+
   removeItem(itemId: string): void {
     this.itemsMap.delete(itemId);
   }

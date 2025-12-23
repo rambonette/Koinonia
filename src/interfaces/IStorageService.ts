@@ -28,6 +28,11 @@ export interface IStorageService {
   toggleItem(itemId: string): void;
 
   /**
+   * Update an item's properties
+   */
+  updateItem(itemId: string, updates: Partial<Omit<GroceryItem, 'id' | 'addedAt'>>): void;
+
+  /**
    * Remove an item from the list
    */
   removeItem(itemId: string): void;
