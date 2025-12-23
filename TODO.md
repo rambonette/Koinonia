@@ -7,8 +7,6 @@
 * add/verify deeplink support and sharing
 * update docs on how to enable deeplink support manaully in android since we are not verified nor trusted by anyone.
 * add item categories to better organize the list
-* integrate an automated versioning tool - use date versioning 
-* automated github actions pipelines to build stable releases from master branch and nightly releases from develop branch.
 * study how to deploy to fdroid
 
 
@@ -21,3 +19,5 @@
 * deploy koinonia server instance
 * bugfix: newly created lists are not immediatly visibile once going back to the home - they do only after app cose and reopen.
 * fix icon not displaying on pixel 6 android 16
+* integrate an automated versioning tool - use date versioning 
+* automated github actions pipelines to build stable releases from master branch and nightly releases from develop branch.
