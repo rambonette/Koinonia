@@ -46,11 +46,11 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for tag querying
 
-      # 2. SETUP IONIC + NODE.JS
+      # 2. SETUP IONIC + NODE.JS + JAVA
       - name: Setup Ionic
-        uses: coturiv/setup-ionic@v1
+        uses: coturiv/setup-ionic@v2
         with:
-          install-java: true
+          java-version: 17
 
       # 3. INSTALL DEPENDENCIES
       - name: Install dependencies
