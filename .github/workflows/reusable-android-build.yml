@@ -70,6 +70,7 @@ jobs:
         run: |
           # Generate date components
           YEAR=$(date +%Y)
+          YEAR_SHORT=$(date +%y)
           MONTH=$(date +%m)
           DAY=$(date +%d)
           DATE_VERSION="${YEAR}.${MONTH}.${DAY}"
@@ -98,8 +99,9 @@ jobs:
           FULL_VERSION="${DATE_VERSION}.${BUILD}"
 
           # Calculate Android versionCode (must be integer)
-          # Format: YYYYMMDDXXX where XXX is build number
-          VERSION_CODE=$(printf "%04d%02d%02d%03d" $YEAR $MONTH $DAY $BUILD)
+          # Format: YYMMDDXXX where XXX is build number
+          # Using 2-digit year to fit in 32-bit integer (max 2147483647)
+          VERSION_CODE=$(printf "%02d%02d%02d%03d" $YEAR_SHORT $MONTH $DAY $BUILD)
 
           # Create tag name
           TAG="${{ inputs.tag_prefix }}${FULL_VERSION}"
@@ -182,8 +184,8 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
 
-      # 12. SIGN APK
-      - name: Sign APK with jarsigner
+      # 12. ALIGN & SIGN APK (Improved)
+      - name: Align and Sign APK
         id: build_apk
         run: |
           # Find the unsigned APK
@@ -197,22 +199,38 @@ jobs:
 
           echo "Found APK: $UNSIGNED_APK"
 
-          # Sign the APK
-          jarsigner -verbose \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            -keystore ${{ github.workspace }}/release.keystore \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            "$UNSIGNED_APK" \
-            "${{ secrets.ANDROID_KEY_ALIAS }}"
+          # Setup Android Build Tools
+          # GitHub Actions runners have Android SDK at $ANDROID_HOME or $ANDROID_SDK_ROOT
+          BUILD_TOOLS_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools"
+          # Get the latest version of build tools
+          LATEST_BUILD_TOOLS=$(ls -1 "$BUILD_TOOLS_DIR" | sort -V | tail -n 1)
+          TOOLS_PATH="$BUILD_TOOLS_DIR/$LATEST_BUILD_TOOLS"
+          echo "Using build-tools from: $TOOLS_PATH"
+
+          ALIGNED_APK="${UNSIGNED_APK%.*}-aligned.apk"
+          SIGNED_APK="${UNSIGNED_APK%.*}-signed.apk"
+
+          # 1. Zipalign (Optimizes the APK - MUST be done before signing for apksigner)
+          echo "Running zipalign..."
+          "$TOOLS_PATH/zipalign" -v -p 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+
+          # 2. Apksigner (V2+ Signing - Standard for modern Android)
+          echo "Signing with apksigner..."
+          "$TOOLS_PATH/apksigner" sign \
+            --ks "${{ github.workspace }}/release.keystore" \
+            --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out "$SIGNED_APK" \
+            "$ALIGNED_APK"
 
           # Verify signature
-          jarsigner -verify -verbose "$UNSIGNED_APK"
+          echo "Verifying signature..."
+          "$TOOLS_PATH/apksigner" verify --verbose "$SIGNED_APK"
 
-          echo "apk_path=$UNSIGNED_APK" >> $GITHUB_OUTPUT
-          echo "Signed APK: $UNSIGNED_APK"
-          ls -lh "$UNSIGNED_APK"
+          echo "apk_path=$SIGNED_APK" >> $GITHUB_OUTPUT
+          echo "Signed APK: $SIGNED_APK"
+          ls -lh "$SIGNED_APK"
 
       # 11. RENAME APK
       - name: Rename APK
