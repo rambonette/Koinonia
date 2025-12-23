@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useIonViewWillEnter, useIonViewWillLeave } from '@ionic/react';
 import { useServices } from '../contexts/ServicesContext';
 import { GroceryItem } from '../interfaces/IStorageService';
 import { recentListsUtils } from '../utils/recentLists';
@@ -28,8 +29,8 @@ export const useGroceryList = (roomId: string | null): UseGroceryListResult => {
   const [peerCount, setPeerCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Connect to P2P network when roomId changes
-  useEffect(() => {
+  // Connect to P2P network when view enters
+  useIonViewWillEnter(() => {
     if (!roomId) {
       setLoading(false);
       return;
@@ -38,31 +39,24 @@ export const useGroceryList = (roomId: string | null): UseGroceryListResult => {
     // Add to recent lists
     recentListsUtils.addRecentList(roomId);
 
-    let mounted = true;
-
     const connectToRoom = async () => {
       try {
         setLoading(true);
         await sync.connect(roomId);
-
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       } catch (error) {
         console.error('Failed to connect:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     connectToRoom();
+  });
 
-    return () => {
-      mounted = false;
-      sync.disconnect();
-    };
-  }, [roomId, sync]);
+  // Disconnect when view leaves
+  useIonViewWillLeave(() => {
+    sync.disconnect();
+  });
 
   // Subscribe to connection status changes
   useEffect(() => {

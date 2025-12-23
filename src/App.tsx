@@ -44,14 +44,22 @@ import './theme/variables.css';
 setupIonicReact();
 
 /**
- * AppContent component with routing and deep link handling
+ * Component to handle deep link side effects
+ * Must be rendered inside IonReactRouter to have access to history
+ */
+const DeepLinkListener: React.FC = () => {
+  useDeepLink();
+  return null;
+};
+
+/**
+ * AppContent component with routing
  * Must be inside ServicesProvider to access services
  */
 const AppContent: React.FC = () => {
-  useDeepLink(); // Initialize deep link handling
-
   return (
     <IonReactRouter>
+      <DeepLinkListener />
       <IonRouterOutlet>
         <Route path="/home" component={HomePage} exact />
         <Route path="/settings" component={SettingsPage} exact />

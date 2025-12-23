@@ -22,6 +22,16 @@ export class DeepLinkService implements IDeepLinkService {
       this.listener = handle;
     });
 
+    // Check for initial launch URL (Cold start)
+    App.getLaunchUrl().then(launchUrl => {
+      if (launchUrl && launchUrl.url) {
+        const roomId = this.parseDeepLink(launchUrl.url);
+        if (roomId) {
+          callback(roomId);
+        }
+      }
+    });
+
     return () => {
       if (this.listener) {
         this.listener.remove();
