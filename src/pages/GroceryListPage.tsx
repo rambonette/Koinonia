@@ -23,7 +23,8 @@ import {
   IonItemOption,
   IonChip,
   IonToast,
-  IonAlert
+  IonAlert,
+  IonModal
 } from '@ionic/react';
 import {
   peopleOutline,
@@ -33,13 +34,17 @@ import {
   cloudOutline,
   cloudOfflineOutline,
   arrowBackOutline,
-  createOutline
+  createOutline,
+  qrCodeOutline,
+  closeOutline,
+  ellipsisVertical
 } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
 import { Share } from '@capacitor/share';
 import { recentListsUtils } from '../utils/recentLists';
+import QRCode from 'qrcode';
 
 const GroceryListPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -50,6 +55,8 @@ const GroceryListPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [editingItem, setEditingItem] = useState<{ id: string; name: string } | null>(null);
   const listRef = useRef<HTMLIonListElement>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
 
   const {
     items,
@@ -114,6 +121,25 @@ const GroceryListPage: React.FC = () => {
     }
   };
 
+  const generateQRCode = async () => {
+    try {
+      const deepLinkUrl = deepLink.generateDeepLink(roomId);
+      const url = await QRCode.toDataURL(deepLinkUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      setQrCodeDataUrl(url);
+      setShowQRModal(true);
+    } catch (err) {
+      console.error(err);
+      setToastMessage('Could not generate QR Code');
+    }
+  };
+
   if (loading) {
     return (
       <IonPage>
@@ -137,11 +163,6 @@ const GroceryListPage: React.FC = () => {
             </IonButton>
           </IonButtons>
           <IonTitle>Shopping List</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={handleShare}>
-              <IonIcon slot="icon-only" icon={shareOutline} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
         <IonToolbar color="light">
           <IonChip slot="start" color={connected ? 'success' : 'warning'} outline>
@@ -211,13 +232,11 @@ const GroceryListPage: React.FC = () => {
         </IonList>
 
         {/* Floating action button for options */}
-        {items.length > 0 && (
-          <IonFab vertical="bottom" horizontal="end" slot="fixed">
-            <IonFabButton onClick={() => setShowActionSheet(true)}>
-              <IonIcon icon={trashOutline} />
-            </IonFabButton>
-          </IonFab>
-        )}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => setShowActionSheet(true)}>
+            <IonIcon icon={ellipsisVertical} />
+          </IonFabButton>
+        </IonFab>
 
         {/* Edit Item Alert */}
         <IonAlert
@@ -255,8 +274,19 @@ const GroceryListPage: React.FC = () => {
           onDidDismiss={() => setShowActionSheet(false)}
           buttons={[
             {
+              text: 'Share via Link',
+              icon: shareOutline,
+              handler: handleShare
+            },
+            {
+              text: 'Show QR Code',
+              icon: qrCodeOutline,
+              handler: generateQRCode
+            },
+            {
               text: 'Clear All Items',
               role: 'destructive',
+              icon: trashOutline,
               handler: () => {
                 clearList();
               }
@@ -264,18 +294,47 @@ const GroceryListPage: React.FC = () => {
             {
               text: 'Delete List & Go Back',
               role: 'destructive',
+              icon: trashOutline,
               handler: () => {
                 clearList();
                 recentListsUtils.removeRecentList(roomId);
-                history.push('/home');
+                history.goBack();
               }
             },
             {
               text: 'Cancel',
-              role: 'cancel'
+              role: 'cancel',
+              icon: closeOutline
             }
           ]}
         />
+
+        {/* QR Code Modal */}
+        <IonModal isOpen={showQRModal} onDidDismiss={() => setShowQRModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Share List</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowQRModal(false)}>
+                  <IonIcon icon={closeOutline} />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding ion-text-center">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <IonText>
+                <h3>Scan to Join List</h3>
+              </IonText>
+              {qrCodeDataUrl && (
+                <img src={qrCodeDataUrl} alt="List QR Code" style={{ maxWidth: '100%', border: '1px solid #ccc', padding: '10px', borderRadius: '8px' }} />
+              )}
+              <IonText color="medium" className="ion-margin-top">
+                <p>Code: {roomId}</p>
+              </IonText>
+            </div>
+          </IonContent>
+        </IonModal>
 
         {/* Toast for share feedback */}
         <IonToast
