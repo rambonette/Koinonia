@@ -46,12 +46,9 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for tag querying
 
-      # 2. SETUP IONIC + NODE.JS + JAVA
+      # 2. SETUP IONIC ENVIRONMENT
       - name: Setup Ionic
         uses: coturiv/setup-ionic@v2
-        with:
-          java-version: 17
-          capacitor-version: 7
 
       # 3. INSTALL DEPENDENCIES
       - name: Install dependencies
