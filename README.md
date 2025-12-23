@@ -39,7 +39,18 @@ Built with:
 
 ## Installation
 
+### Android
+
+Download freshly baked APKs directly from the [Releases pages](https://github.com/rambonette/Koinonia/releases).
+Use the versions tagged with `Nightly` to try out the latest features. Use the versions tagged with `Stable` if you're planning to daily drive the app.
+
 Available on [F-Droid](https://f-droid.org) (coming soon)
+
+### iOS
+
+I don't have an Apple Developer Account yet :(
+
+### DIY
 
 Or build from source:
 ```bash
