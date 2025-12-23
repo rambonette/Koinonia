@@ -75,6 +75,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: develop
+          fetch-depth: 0
 
       - name: Download APK artifact
         uses: actions/download-artifact@v4
@@ -85,13 +86,17 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          # Get commits since last nightly
-          LAST_TAG=$(git tag -l "develop-*" --sort=-v:refname | grep -v "${{ needs.build.outputs.tag }}" | head -n 1)
+          # Get the tag created by the build job
+          CURRENT_TAG="${{ needs.build.outputs.tag }}"
+          
+          # Get the previous nightly tag
+          LAST_TAG=$(git tag -l "develop-*" --sort=-v:refname | grep -v "$CURRENT_TAG" | head -n 1)
 
           if [ -z "$LAST_TAG" ]; then
             CHANGELOG="Initial nightly release"
           else
-            CHANGELOG=$(git log $LAST_TAG..HEAD --oneline --no-decorate)
+            # Get list of commits between tags
+            CHANGELOG=$(git log $LAST_TAG..$CURRENT_TAG --pretty=format:"* %s (%h)" --no-merges)
           fi
 
           echo "$CHANGELOG" > changelog.txt
