@@ -18,17 +18,27 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file(System.getenv("ANDROID_KEYSTORE_FILE") ?: "release.keystore")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            keyAlias System.getenv("ANDROID_KEY_ALIAS")
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            def keystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
+            def keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            def keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            def keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+
+            if (keystoreFile && keystorePassword && keyAlias && keyPassword) {
+                storeFile file(keystoreFile)
+                storePassword keystorePassword
+                keyAlias keyAlias
+                keyPassword keyPassword
+            }
         }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            // Only apply signing config if environment variables are set
+            if (System.getenv("ANDROID_KEYSTORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
