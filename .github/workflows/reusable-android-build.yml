@@ -11,6 +11,11 @@ on:
         required: true
         type: string
         description: 'Tag prefix (v or develop-)'
+      retention_days:
+        required: false
+        type: number
+        default: 3
+        description: 'How many days to keep the artifact'
     secrets:
       ANDROID_KEYSTORE_BASE64:
         required: true
@@ -239,13 +244,13 @@ jobs:
           echo "renamed_apk=${{ github.workspace }}/$APK_NAME" >> $GITHUB_OUTPUT
           echo "Renamed APK to: $APK_NAME"
 
-      # 12. UPLOAD ARTIFACT
+      # 13. UPLOAD ARTIFACT
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: koinonia-${{ steps.version.outputs.version }}-release.apk
           path: ${{ steps.rename_apk.outputs.renamed_apk }}
-          retention-days: 90
+          retention-days: ${{ inputs.retention_days }}
 
       # 13. CREATE GIT TAG
       - name: Create Git tag
