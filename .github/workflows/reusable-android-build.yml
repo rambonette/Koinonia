@@ -75,12 +75,9 @@ jobs:
           DAY=$(date +%d)
           DATE_VERSION="${YEAR}.${MONTH}.${DAY}"
 
-          # Find existing build number for today
-          if [ "${{ inputs.release_type }}" == "nightly" ]; then
-            PATTERN="develop-${DATE_VERSION}.*"
-          else
-            PATTERN="v${DATE_VERSION}.*"
-          fi
+          # Find existing build number for today (looking at ALL tags)
+          # Matches both v2024.12.24.1 and develop-2024.12.24.1
+          PATTERN="*${DATE_VERSION}.*"
 
           # Query Git tags matching today's pattern
           EXISTING_TAGS=$(git tag -l "$PATTERN" | sort -V)
@@ -89,7 +86,7 @@ jobs:
           if [ -z "$EXISTING_TAGS" ]; then
             LAST_BUILD=0
           else
-            # Extract last build number from tag like "v2025.12.23.2"
+            # Extract last build number from tag like "v2025.12.23.2" or "develop-2025.12.23.2"
             LAST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
             LAST_BUILD=$(echo "$LAST_TAG" | sed -E 's/.*\.([0-9]+)$/\1/')
           fi
