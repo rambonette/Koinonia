@@ -1,6 +1,6 @@
 ### TODO
 
-* import list from plain text - has to be one entry per line.
+* import?export list from plain text - has to be one entry per line.
 * add/verify deeplink support and sharing
 * update docs on how to enable deeplink support manaully in android since we are not verified nor trusted by anyone.
 * add item categories to better organize the list
