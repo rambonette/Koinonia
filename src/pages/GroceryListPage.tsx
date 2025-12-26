@@ -37,8 +37,10 @@ import {
   createOutline,
   qrCodeOutline,
   closeOutline,
-  ellipsisVertical
+  ellipsisVertical,
+  documentTextOutline
 } from 'ionicons/icons';
+import ImportExportModal from '../components/ImportExportModal';
 import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
@@ -57,6 +59,7 @@ const GroceryListPage: React.FC = () => {
   const listRef = useRef<HTMLIonListElement>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [showImportExportModal, setShowImportExportModal] = useState(false);
 
   const {
     items,
@@ -284,6 +287,11 @@ const GroceryListPage: React.FC = () => {
               handler: generateQRCode
             },
             {
+              text: 'Import & Export',
+              icon: documentTextOutline,
+              handler: () => setShowImportExportModal(true)
+            },
+            {
               text: 'Clear All Items',
               role: 'destructive',
               icon: trashOutline,
@@ -335,6 +343,15 @@ const GroceryListPage: React.FC = () => {
             </div>
           </IonContent>
         </IonModal>
+
+        {/* Import/Export Modal */}
+        <ImportExportModal
+          isOpen={showImportExportModal}
+          onDismiss={() => setShowImportExportModal(false)}
+          items={items}
+          onImport={(names) => names.forEach(name => addItem(name))}
+          onToast={setToastMessage}
+        />
 
         {/* Toast for share feedback */}
         <IonToast
