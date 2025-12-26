@@ -11,6 +11,10 @@ on:
         required: true
         type: string
         description: 'Tag prefix (v or develop-)'
+      ref:
+        required: true
+        type: string
+        description: 'Git ref to checkout (branch or tag)'
       retention_days:
         required: false
         type: number
@@ -49,6 +53,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 0  # Fetch all history for tag querying
 
       # 2. SETUP NODE.JS
