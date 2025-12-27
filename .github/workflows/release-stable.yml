@@ -18,6 +18,8 @@ jobs:
     with:
       release_type: stable
       tag_prefix: v
+      ref: master
+      retention_days: 30
     secrets:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -32,6 +34,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
 
       - name: Download APK artifact
         uses: actions/download-artifact@v4
@@ -42,13 +47,16 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
+          # Get the tag created by the build job
+          CURRENT_TAG="${{ needs.build.outputs.tag }}"
+
           # Get commits since last stable release
-          LAST_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "${{ needs.build.outputs.tag }}" | head -n 1)
+          LAST_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "$CURRENT_TAG" | head -n 1)
 
           if [ -z "$LAST_TAG" ]; then
             CHANGELOG="Initial release"
           else
-            CHANGELOG=$(git log $LAST_TAG..HEAD --oneline --no-decorate)
+            CHANGELOG=$(git log $LAST_TAG..$CURRENT_TAG --pretty=format:"* %s (%h)" --no-merges)
           fi
 
           # Save to file for multiline handling

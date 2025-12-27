@@ -6,7 +6,9 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 
 import { ServicesProvider } from './contexts/ServicesContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { useDeepLink } from './hooks/useDeepLink';
+import UpdateChecker from './components/UpdateChecker';
 import HomePage from './pages/HomePage';
 import GroceryListPage from './pages/GroceryListPage';
 import SettingsPage from './pages/SettingsPage';
@@ -44,14 +46,23 @@ import './theme/variables.css';
 setupIonicReact();
 
 /**
- * AppContent component with routing and deep link handling
+ * Component to handle deep link side effects
+ * Must be rendered inside IonReactRouter to have access to history
+ */
+const DeepLinkListener: React.FC = () => {
+  useDeepLink();
+  return null;
+};
+
+/**
+ * AppContent component with routing
  * Must be inside ServicesProvider to access services
  */
 const AppContent: React.FC = () => {
-  useDeepLink(); // Initialize deep link handling
-
   return (
     <IonReactRouter>
+      <DeepLinkListener />
+      <UpdateChecker />
       <IonRouterOutlet>
         <Route path="/home" component={HomePage} exact />
         <Route path="/settings" component={SettingsPage} exact />
@@ -77,9 +88,11 @@ const App: React.FC = () => {
 
   return (
     <IonApp>
-      <ServicesProvider>
-        <AppContent />
-      </ServicesProvider>
+      <ToastProvider>
+        <ServicesProvider>
+          <AppContent />
+        </ServicesProvider>
+      </ToastProvider>
     </IonApp>
   );
 };

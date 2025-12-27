@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
-  IonList,
   IonItem,
-  IonLabel,
-  IonCheckbox,
   IonInput,
   IonButton,
   IonButtons,
@@ -18,11 +15,10 @@ import {
   IonFabButton,
   IonActionSheet,
   IonText,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption,
   IonChip,
-  IonToast
+  IonLabel,
+  IonAlert,
+  IonModal
 } from '@ionic/react';
 import {
   peopleOutline,
@@ -31,30 +27,47 @@ import {
   trashOutline,
   cloudOutline,
   cloudOfflineOutline,
-  arrowBackOutline
+  arrowBackOutline,
+  qrCodeOutline,
+  closeOutline,
+  ellipsisVertical,
+  documentTextOutline
 } from 'ionicons/icons';
+import ImportExportModal from '../components/ImportExportModal';
+import GroceryItemsTree from '../components/GroceryItemsTree';
 import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
+import { useToast } from '../contexts/ToastContext';
 import { Share } from '@capacitor/share';
 import { recentListsUtils } from '../utils/recentLists';
+import QRCode from 'qrcode';
 
 const GroceryListPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const history = useHistory();
   const { deepLink } = useServices();
+  const { showToast } = useToast();
   const [newItemName, setNewItemName] = useState('');
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [editingItem, setEditingItem] = useState<{ id: string; name: string } | null>(null);
+  const listRef = useRef<HTMLIonListElement>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [showImportExportModal, setShowImportExportModal] = useState(false);
 
   const {
     items,
+    hierarchicalItems,
     connected,
     peerCount,
     loading,
     addItem,
     toggleItem,
+    updateItem,
     removeItem,
+    setItemParent,
+    reorderItem,
     clearList
   } = useGroceryList(roomId);
 
@@ -63,6 +76,19 @@ const GroceryListPage: React.FC = () => {
       addItem(newItemName.trim());
       setNewItemName('');
     }
+  };
+
+  const handleEditItem = (itemId: string, newName: string) => {
+    if (newName.trim()) {
+      updateItem(itemId, { name: newName.trim() });
+      setEditingItem(null);
+      listRef.current?.closeSlidingItems();
+    }
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    removeItem(itemId);
+    listRef.current?.closeSlidingItems();
   };
 
   const handleShare = async () => {
@@ -82,17 +108,36 @@ const GroceryListPage: React.FC = () => {
       } else {
         // Fallback: copy to clipboard
         await navigator.clipboard.writeText(shareText);
-        setToastMessage('Link copied to clipboard!');
+        showToast('Link copied to clipboard!');
       }
     } catch (error) {
       console.error('Error sharing:', error);
       // Fallback: try clipboard
       try {
         await navigator.clipboard.writeText(shareText);
-        setToastMessage('Link copied to clipboard!');
+        showToast('Link copied to clipboard!');
       } catch {
-        setToastMessage(`Share code: ${roomId}`);
+        showToast(`Share code: ${roomId}`);
       }
+    }
+  };
+
+  const generateQRCode = async () => {
+    try {
+      const deepLinkUrl = deepLink.generateDeepLink(roomId);
+      const url = await QRCode.toDataURL(deepLinkUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      setQrCodeDataUrl(url);
+      setShowQRModal(true);
+    } catch (err) {
+      console.error(err);
+      showToast('Could not generate QR Code');
     }
   };
 
@@ -119,11 +164,6 @@ const GroceryListPage: React.FC = () => {
             </IonButton>
           </IonButtons>
           <IonTitle>Shopping List</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={handleShare}>
-              <IonIcon slot="icon-only" icon={shareOutline} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
         <IonToolbar color="light">
           <IonChip slot="start" color={connected ? 'success' : 'warning'} outline>
@@ -157,46 +197,52 @@ const GroceryListPage: React.FC = () => {
         </IonItem>
 
         {/* Grocery items list */}
-        <IonList>
-          {items.length === 0 ? (
-            <IonItem>
-              <IonLabel className="ion-text-center">
-                <IonText color="medium">
-                  <p>No items yet. Add your first item above!</p>
-                </IonText>
-              </IonLabel>
-            </IonItem>
-          ) : (
-            items.map(item => (
-              <IonItemSliding key={item.id}>
-                <IonItem>
-                  <IonCheckbox
-                    slot="start"
-                    checked={item.checked}
-                    onIonChange={() => toggleItem(item.id)}
-                  />
-                  <IonLabel className={item.checked ? 'ion-text-strike' : ''}>
-                    {item.name}
-                  </IonLabel>
-                </IonItem>
-                <IonItemOptions side="end">
-                  <IonItemOption color="danger" onClick={() => removeItem(item.id)}>
-                    <IonIcon icon={trashOutline} />
-                  </IonItemOption>
-                </IonItemOptions>
-              </IonItemSliding>
-            ))
-          )}
-        </IonList>
+          <GroceryItemsTree
+            items={hierarchicalItems}
+            onToggle={toggleItem}
+            onEdit={(id, name) => setEditingItem({ id, name })}
+            onDelete={handleRemoveItem}
+            onSetParent={setItemParent}
+            onReorderPosition={reorderItem}
+            listRef={listRef}
+          />
 
         {/* Floating action button for options */}
-        {items.length > 0 && (
-          <IonFab vertical="bottom" horizontal="end" slot="fixed">
-            <IonFabButton onClick={() => setShowActionSheet(true)}>
-              <IonIcon icon={trashOutline} />
-            </IonFabButton>
-          </IonFab>
-        )}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => setShowActionSheet(true)}>
+            <IonIcon icon={ellipsisVertical} />
+          </IonFabButton>
+        </IonFab>
+
+        {/* Edit Item Alert */}
+        <IonAlert
+          isOpen={!!editingItem}
+          header="Edit Item"
+          inputs={[
+            {
+              name: 'name',
+              type: 'text',
+              placeholder: 'Item name',
+              value: editingItem?.name
+            }
+          ]}
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              handler: () => setEditingItem(null)
+            },
+            {
+              text: 'Save',
+              handler: (data) => {
+                if (editingItem) {
+                  handleEditItem(editingItem.id, data.name);
+                }
+              }
+            }
+          ]}
+          onDidDismiss={() => setEditingItem(null)}
+        />
 
         {/* Action sheet for list actions */}
         <IonActionSheet
@@ -204,8 +250,24 @@ const GroceryListPage: React.FC = () => {
           onDidDismiss={() => setShowActionSheet(false)}
           buttons={[
             {
+              text: 'Share via Link',
+              icon: shareOutline,
+              handler: handleShare
+            },
+            {
+              text: 'Show QR Code',
+              icon: qrCodeOutline,
+              handler: generateQRCode
+            },
+            {
+              text: 'Import & Export',
+              icon: documentTextOutline,
+              handler: () => setShowImportExportModal(true)
+            },
+            {
               text: 'Clear All Items',
               role: 'destructive',
+              icon: trashOutline,
               handler: () => {
                 clearList();
               }
@@ -213,26 +275,54 @@ const GroceryListPage: React.FC = () => {
             {
               text: 'Delete List & Go Back',
               role: 'destructive',
+              icon: trashOutline,
               handler: () => {
                 clearList();
                 recentListsUtils.removeRecentList(roomId);
-                history.push('/home');
+                history.goBack();
               }
             },
             {
               text: 'Cancel',
-              role: 'cancel'
+              role: 'cancel',
+              icon: closeOutline
             }
           ]}
         />
 
-        {/* Toast for share feedback */}
-        <IonToast
-          isOpen={!!toastMessage}
-          message={toastMessage}
-          duration={2000}
-          onDidDismiss={() => setToastMessage('')}
-          position="bottom"
+        {/* QR Code Modal */}
+        <IonModal isOpen={showQRModal} onDidDismiss={() => setShowQRModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Share List</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowQRModal(false)}>
+                  <IonIcon icon={closeOutline} />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding ion-text-center">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <IonText>
+                <h3>Scan to Join List</h3>
+              </IonText>
+              {qrCodeDataUrl && (
+                <img src={qrCodeDataUrl} alt="List QR Code" style={{ maxWidth: '100%', border: '1px solid #ccc', padding: '10px', borderRadius: '8px' }} />
+              )}
+              <IonText color="medium" className="ion-margin-top">
+                <p>Code: {roomId}</p>
+              </IonText>
+            </div>
+          </IonContent>
+        </IonModal>
+
+        {/* Import/Export Modal */}
+        <ImportExportModal
+          isOpen={showImportExportModal}
+          onDismiss={() => setShowImportExportModal(false)}
+          items={items}
+          onImport={(names) => names.forEach(name => addItem(name))}
         />
       </IonContent>
     </IonPage>

@@ -11,6 +11,15 @@ on:
         required: true
         type: string
         description: 'Tag prefix (v or develop-)'
+      ref:
+        required: true
+        type: string
+        description: 'Git ref to checkout (branch or tag)'
+      retention_days:
+        required: false
+        type: number
+        default: 3
+        description: 'How many days to keep the artifact'
     secrets:
       ANDROID_KEYSTORE_BASE64:
         required: true
@@ -44,6 +53,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 0  # Fetch all history for tag querying
 
       # 2. SETUP NODE.JS
@@ -75,12 +85,9 @@ jobs:
           DAY=$(date +%d)
           DATE_VERSION="${YEAR}.${MONTH}.${DAY}"
 
-          # Find existing build number for today
-          if [ "${{ inputs.release_type }}" == "nightly" ]; then
-            PATTERN="develop-${DATE_VERSION}.*"
-          else
-            PATTERN="v${DATE_VERSION}.*"
-          fi
+          # Find existing build number for today (looking at ALL tags)
+          # Matches both v2024.12.24.1 and develop-2024.12.24.1
+          PATTERN="*${DATE_VERSION}.*"
 
           # Query Git tags matching today's pattern
           EXISTING_TAGS=$(git tag -l "$PATTERN" | sort -V)
@@ -89,7 +96,7 @@ jobs:
           if [ -z "$EXISTING_TAGS" ]; then
             LAST_BUILD=0
           else
-            # Extract last build number from tag like "v2025.12.23.2"
+            # Extract last build number from tag like "v2025.12.23.2" or "develop-2025.12.23.2"
             LAST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
             LAST_BUILD=$(echo "$LAST_TAG" | sed -E 's/.*\.([0-9]+)$/\1/')
           fi
@@ -242,13 +249,13 @@ jobs:
           echo "renamed_apk=${{ github.workspace }}/$APK_NAME" >> $GITHUB_OUTPUT
           echo "Renamed APK to: $APK_NAME"
 
-      # 12. UPLOAD ARTIFACT
+      # 13. UPLOAD ARTIFACT
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: koinonia-${{ steps.version.outputs.version }}-release.apk
           path: ${{ steps.rename_apk.outputs.renamed_apk }}
-          retention-days: 90
+          retention-days: ${{ inputs.retention_days }}
 
       # 13. CREATE GIT TAG
       - name: Create Git tag

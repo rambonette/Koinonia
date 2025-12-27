@@ -21,9 +21,15 @@ const getDefaultSettings = (): AppSettings => {
     { urls: 'stun:stun4.l.google.com:19302' }
   ];
 
+  const updateSettings = {
+    checkForStableUpdates: true,
+    checkForNightlyUpdates: false
+  };
+
   const devSettings: AppSettings = {
     signalingServers: ['ws://localhost:4444'],
-    iceServers: defaultIceServers
+    iceServers: defaultIceServers,
+    ...updateSettings
   };
 
   const prodSettings: AppSettings = {
@@ -33,7 +39,8 @@ const getDefaultSettings = (): AppSettings => {
       'wss://y-webrtc-signaling-eu.herokuapp.com',
       'wss://y-webrtc-signaling-us.herokuapp.com'
     ],
-    iceServers: defaultIceServers
+    iceServers: defaultIceServers,
+    ...updateSettings
   };
 
   return isDevelopment() ? devSettings : prodSettings;
