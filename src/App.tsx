@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 
 import { ServicesProvider } from './contexts/ServicesContext';
 import { useDeepLink } from './hooks/useDeepLink';
+import UpdateChecker from './components/UpdateChecker';
 import HomePage from './pages/HomePage';
 import GroceryListPage from './pages/GroceryListPage';
 import SettingsPage from './pages/SettingsPage';
@@ -60,6 +61,7 @@ const AppContent: React.FC = () => {
   return (
     <IonReactRouter>
       <DeepLinkListener />
+      <UpdateChecker />
       <IonRouterOutlet>
         <Route path="/home" component={HomePage} exact />
         <Route path="/settings" component={SettingsPage} exact />

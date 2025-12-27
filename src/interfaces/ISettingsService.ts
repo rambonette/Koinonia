@@ -8,7 +8,12 @@ export interface ServerConfig {
   iceServers: RTCIceServer[];
 }
 
-export interface AppSettings extends ServerConfig {
+export interface UpdateSettings {
+  checkForStableUpdates: boolean;
+  checkForNightlyUpdates: boolean;
+}
+
+export interface AppSettings extends ServerConfig, UpdateSettings {
   // Future settings can be added here
 }
 

@@ -1,6 +1,6 @@
 ### TODO
 
-* check for updates on startup - control behavior via settings page with option to manually check fo updates and disable updates check
+* unify the ion-toast control  as global util
 * study how to deploy to fdroid
 
 
@@ -21,3 +21,4 @@
 * import/export list from plain text - has to be one entry per line.
 * add/verify deeplink support and sharing
 * add item categories to better organize the list
+* check for updates on startup - control behavior via settings page with option to manually check fo updates and disable updates check
