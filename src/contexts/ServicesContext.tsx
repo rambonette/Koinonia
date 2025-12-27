@@ -3,16 +3,20 @@ import { ISyncService } from '../interfaces/ISyncService';
 import { IStorageService } from '../interfaces/IStorageService';
 import { IDeepLinkService } from '../interfaces/IDeepLinkService';
 import { ISettingsService } from '../interfaces/ISettingsService';
+import { IUpdateService } from '../interfaces/IUpdateService';
 import { WebRTCSyncService } from '../services/WebRTCSyncService';
 import { YjsStorageService } from '../services/YjsStorageService';
 import { DeepLinkService } from '../services/DeepLinkService';
 import { SettingsService } from '../services/SettingsService';
+import { UpdateService } from '../services/UpdateService';
+import { version as appVersion } from '../../package.json';
 
 interface Services {
   sync: ISyncService;
   storage: IStorageService;
   deepLink: IDeepLinkService;
   settings: ISettingsService;
+  update: IUpdateService;
 }
 
 const ServicesContext = createContext<Services | null>(null);
@@ -41,7 +45,8 @@ export const ServicesProvider: React.FC<ServicesProviderProps> = ({ children }) 
       settings,
       sync,
       storage,
-      deepLink: new DeepLinkService()
+      deepLink: new DeepLinkService(),
+      update: new UpdateService(settings, appVersion)
     };
   }, []); // Empty dependency array - create once and never recreate
 
