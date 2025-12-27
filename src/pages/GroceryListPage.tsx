@@ -5,10 +5,7 @@ import {
   IonToolbar,
   IonTitle,
   IonContent,
-  IonList,
   IonItem,
-  IonLabel,
-  IonCheckbox,
   IonInput,
   IonButton,
   IonButtons,
@@ -18,10 +15,8 @@ import {
   IonFabButton,
   IonActionSheet,
   IonText,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption,
   IonChip,
+  IonLabel,
   IonToast,
   IonAlert,
   IonModal
@@ -34,13 +29,13 @@ import {
   cloudOutline,
   cloudOfflineOutline,
   arrowBackOutline,
-  createOutline,
   qrCodeOutline,
   closeOutline,
   ellipsisVertical,
   documentTextOutline
 } from 'ionicons/icons';
 import ImportExportModal from '../components/ImportExportModal';
+import GroceryItemsTree from '../components/GroceryItemsTree';
 import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
@@ -63,6 +58,7 @@ const GroceryListPage: React.FC = () => {
 
   const {
     items,
+    hierarchicalItems,
     connected,
     peerCount,
     loading,
@@ -70,6 +66,8 @@ const GroceryListPage: React.FC = () => {
     toggleItem,
     updateItem,
     removeItem,
+    setItemParent,
+    reorderItem,
     clearList
   } = useGroceryList(roomId);
 
@@ -199,40 +197,15 @@ const GroceryListPage: React.FC = () => {
         </IonItem>
 
         {/* Grocery items list */}
-        <IonList ref={listRef}>
-          {items.length === 0 ? (
-            <IonItem>
-              <IonLabel className="ion-text-center">
-                <IonText color="medium">
-                  <p>No items yet. Add your first item above!</p>
-                </IonText>
-              </IonLabel>
-            </IonItem>
-          ) : (
-            items.map(item => (
-              <IonItemSliding key={item.id}>
-                <IonItem>
-                  <IonCheckbox
-                    slot="start"
-                    checked={item.checked}
-                    onIonChange={() => toggleItem(item.id)}
-                  />
-                  <IonLabel className={item.checked ? 'ion-text-strike' : ''}>
-                    {item.name}
-                  </IonLabel>
-                </IonItem>
-                <IonItemOptions side="end">
-                  <IonItemOption color="primary" onClick={() => setEditingItem({ id: item.id, name: item.name })}>
-                    <IonIcon icon={createOutline} />
-                  </IonItemOption>
-                  <IonItemOption color="danger" onClick={() => handleRemoveItem(item.id)}>
-                    <IonIcon icon={trashOutline} />
-                  </IonItemOption>
-                </IonItemOptions>
-              </IonItemSliding>
-            ))
-          )}
-        </IonList>
+          <GroceryItemsTree
+            items={hierarchicalItems}
+            onToggle={toggleItem}
+            onEdit={(id, name) => setEditingItem({ id, name })}
+            onDelete={handleRemoveItem}
+            onSetParent={setItemParent}
+            onReorderPosition={reorderItem}
+            listRef={listRef}
+          />
 
         {/* Floating action button for options */}
         <IonFab vertical="bottom" horizontal="end" slot="fixed">

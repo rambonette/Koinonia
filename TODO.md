@@ -1,9 +1,6 @@
 ### TODO
 
-* import?export list from plain text - has to be one entry per line.
-* add/verify deeplink support and sharing
-* update docs on how to enable deeplink support manaully in android since we are not verified nor trusted by anyone.
-* add item categories to better organize the list
+* check for updates on startup - control behavior via settings page with option to manually check fo updates and disable updates check
 * study how to deploy to fdroid
 
 
@@ -21,3 +18,6 @@
 * fix icon not displaying on pixel 6 android 16
 * integrate an automated versioning tool - use date versioning 
 * automated github actions pipelines to build stable releases from master branch and nightly releases from develop branch.
+* import/export list from plain text - has to be one entry per line.
+* add/verify deeplink support and sharing
+* add item categories to better organize the list

@@ -4,6 +4,8 @@ export interface GroceryItem {
   checked: boolean;
   addedAt: number;
   addedBy?: string;
+  parentId: string | null;  // null for root items, parent's id for sub-items
+  order: number;  // Display order within parent group (lower = earlier)
 }
 
 /**
@@ -20,7 +22,7 @@ export interface IStorageService {
   /**
    * Add a new item to the list
    */
-  addItem(item: Omit<GroceryItem, 'id' | 'addedAt'>): void;
+  addItem(item: Omit<GroceryItem, 'id' | 'addedAt' | 'order'>): void;
 
   /**
    * Toggle the checked state of an item
@@ -48,4 +50,23 @@ export interface IStorageService {
    * Clear all items
    */
   clear(): void;
+
+  /**
+   * Set the parent of an item (for drag-and-drop hierarchy)
+   * @param itemId - The item to move
+   * @param parentId - The new parent's id, or null to make root item
+   */
+  setParent(itemId: string, parentId: string | null): void;
+
+  /**
+   * Get all children of a parent item
+   */
+  getChildren(parentId: string): GroceryItem[];
+
+  /**
+   * Reorder an item (and its children) to a new position
+   * @param itemId - The item to move
+   * @param newOrder - The new order value
+   */
+  reorderItem(itemId: string, newOrder: number): void;
 }
