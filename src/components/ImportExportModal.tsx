@@ -31,22 +31,22 @@ import { Share } from '@capacitor/share';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { GroceryItem } from '../interfaces/IStorageService';
 import { parseImportText, formatExportText } from '../utils/groceryListExport';
+import { useToast } from '../contexts/ToastContext';
 
 interface ImportExportModalProps {
   isOpen: boolean;
   onDismiss: () => void;
   items: GroceryItem[];
   onImport: (names: string[]) => void;
-  onToast: (message: string) => void;
 }
 
 const ImportExportModal: React.FC<ImportExportModalProps> = ({
   isOpen,
   onDismiss,
   items,
-  onImport,
-  onToast
+  onImport
 }) => {
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [segment, setSegment] = useState<'import' | 'export'>('import');
   const [importText, setImportText] = useState('');
@@ -58,7 +58,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({
     onImport(names);
     setImportText('');
     onDismiss();
-    onToast(`Imported ${names.length} item${names.length === 1 ? '' : 's'}`);
+    showToast(`Imported ${names.length} item${names.length === 1 ? '' : 's'}`);
   };
 
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +69,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({
       setImportText(text);
     } catch (err) {
       console.error('Failed to read file:', err);
-      onToast('Failed to read file');
+      showToast('Failed to read file');
     }
     event.target.value = '';
   };
@@ -78,10 +78,10 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({
     const text = formatExportText(items, exportIncludeChecked);
     try {
       await navigator.clipboard.writeText(text);
-      onToast('Copied to clipboard!');
+      showToast('Copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy:', err);
-      onToast('Failed to copy to clipboard');
+      showToast('Failed to copy to clipboard');
     }
   };
 
@@ -97,7 +97,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({
         });
       } else {
         await navigator.clipboard.writeText(text);
-        onToast('Copied to clipboard!');
+        showToast('Copied to clipboard!');
       }
     } catch (err) {
       console.error('Share failed:', err);
@@ -114,10 +114,10 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({
         directory: Directory.Documents,
         encoding: Encoding.UTF8
       });
-      onToast(`Saved to Documents/${filename}`);
+      showToast(`Saved to Documents/${filename}`);
     } catch (err) {
       console.error('Failed to save file:', err);
-      onToast('Failed to save file');
+      showToast('Failed to save file');
     }
   };
 
