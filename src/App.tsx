@@ -6,6 +6,7 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 
 import { ServicesProvider } from './contexts/ServicesContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { useDeepLink } from './hooks/useDeepLink';
 import UpdateChecker from './components/UpdateChecker';
 import HomePage from './pages/HomePage';
@@ -87,9 +88,11 @@ const App: React.FC = () => {
 
   return (
     <IonApp>
-      <ServicesProvider>
-        <AppContent />
-      </ServicesProvider>
+      <ToastProvider>
+        <ServicesProvider>
+          <AppContent />
+        </ServicesProvider>
+      </ToastProvider>
     </IonApp>
   );
 };

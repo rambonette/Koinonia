@@ -17,7 +17,6 @@ import {
   IonText,
   IonChip,
   IonLabel,
-  IonToast,
   IonAlert,
   IonModal
 } from '@ionic/react';
@@ -39,6 +38,7 @@ import GroceryItemsTree from '../components/GroceryItemsTree';
 import { useParams, useHistory } from 'react-router-dom';
 import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
+import { useToast } from '../contexts/ToastContext';
 import { Share } from '@capacitor/share';
 import { recentListsUtils } from '../utils/recentLists';
 import QRCode from 'qrcode';
@@ -47,9 +47,9 @@ const GroceryListPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const history = useHistory();
   const { deepLink } = useServices();
+  const { showToast } = useToast();
   const [newItemName, setNewItemName] = useState('');
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [editingItem, setEditingItem] = useState<{ id: string; name: string } | null>(null);
   const listRef = useRef<HTMLIonListElement>(null);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -108,16 +108,16 @@ const GroceryListPage: React.FC = () => {
       } else {
         // Fallback: copy to clipboard
         await navigator.clipboard.writeText(shareText);
-        setToastMessage('Link copied to clipboard!');
+        showToast('Link copied to clipboard!');
       }
     } catch (error) {
       console.error('Error sharing:', error);
       // Fallback: try clipboard
       try {
         await navigator.clipboard.writeText(shareText);
-        setToastMessage('Link copied to clipboard!');
+        showToast('Link copied to clipboard!');
       } catch {
-        setToastMessage(`Share code: ${roomId}`);
+        showToast(`Share code: ${roomId}`);
       }
     }
   };
@@ -137,7 +137,7 @@ const GroceryListPage: React.FC = () => {
       setShowQRModal(true);
     } catch (err) {
       console.error(err);
-      setToastMessage('Could not generate QR Code');
+      showToast('Could not generate QR Code');
     }
   };
 
@@ -323,16 +323,6 @@ const GroceryListPage: React.FC = () => {
           onDismiss={() => setShowImportExportModal(false)}
           items={items}
           onImport={(names) => names.forEach(name => addItem(name))}
-          onToast={setToastMessage}
-        />
-
-        {/* Toast for share feedback */}
-        <IonToast
-          isOpen={!!toastMessage}
-          message={toastMessage}
-          duration={2000}
-          onDidDismiss={() => setToastMessage('')}
-          position="bottom"
         />
       </IonContent>
     </IonPage>
