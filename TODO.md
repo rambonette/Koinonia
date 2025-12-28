@@ -1,5 +1,7 @@
 ### TODO
 
+* add user instructions in docs
+* add app screenshots and logo to main README.md
 * study how to deploy to fdroid
 
 
