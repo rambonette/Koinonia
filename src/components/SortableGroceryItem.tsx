@@ -79,7 +79,6 @@ const SortableGroceryItem: React.FC<SortableGroceryItemProps> = ({
         transform: CSS.Translate.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
-        touchAction: 'none',
       }}
     >
       <IonItem lines="full">
@@ -87,6 +86,7 @@ const SortableGroceryItem: React.FC<SortableGroceryItemProps> = ({
         <IonButton
           fill="clear"
           slot="start"
+          style={{ touchAction: 'none' }}
           {...attributes}
           {...listeners}
         >
