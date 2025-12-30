@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { useToast } from '../contexts/ToastContext';
+import { openUrl } from '../utils/browser';
 
 /**
  * Component that checks for updates on mount and shows a toast if available
@@ -22,11 +21,7 @@ const UpdateChecker: React.FC = () => {
           button: {
             text: 'View',
             handler: async () => {
-              if (Capacitor.isNativePlatform()) {
-                await Browser.open({ url: availableUpdate.url });
-              } else {
-                window.open(availableUpdate.url, '_blank');
-              }
+              await openUrl(availableUpdate.url);
               dismissUpdate();
             }
           }
