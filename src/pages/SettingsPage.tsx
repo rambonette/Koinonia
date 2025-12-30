@@ -20,8 +20,10 @@ import {
   IonToggle,
   IonButton
 } from '@ionic/react';
-import { refreshOutline } from 'ionicons/icons';
+import { refreshOutline, logoGithub, bugOutline, bulbOutline } from 'ionicons/icons';
 import { useServices } from '../contexts/ServicesContext';
+import { openUrl } from '../utils/browser';
+import { version as appVersion } from '../../package.json';
 
 const SettingsPage: React.FC = () => {
   const { settings, sync } = useServices();
@@ -183,14 +185,35 @@ const SettingsPage: React.FC = () => {
           </IonCardContent>
         </IonCard>
 
-        <IonList>
-          <IonItem>
-            <IonButton expand="block" fill="outline" onClick={handleReset}>
-              <IonIcon slot="start" icon={refreshOutline} />
-              Reset to Defaults
-            </IonButton>
-          </IonItem>
-        </IonList>
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>About</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent className="ion-no-padding">
+            <div className="ion-text-center ion-padding">
+              <IonNote>Version {appVersion}</IonNote>
+            </div>
+            <IonList lines="none">
+              <IonItem button onClick={() => openUrl('https://github.com/rambonette/Koinonia')}>
+                <IonIcon slot="start" icon={logoGithub} />
+                View on GitHub
+              </IonItem>
+              <IonItem button onClick={() => openUrl('https://github.com/rambonette/Koinonia/issues/new?template=bug_report.yml')}>
+                <IonIcon slot="start" icon={bugOutline} />
+                Report a Bug
+              </IonItem>
+              <IonItem button onClick={() => openUrl('https://github.com/rambonette/Koinonia/issues/new?template=feature_request.yml')}>
+                <IonIcon slot="start" icon={bulbOutline} />
+                Request a Feature
+              </IonItem>
+            </IonList>
+          </IonCardContent>
+        </IonCard>
+
+        <IonButton expand="block" fill="outline" color="danger" onClick={handleReset}>
+          <IonIcon slot="start" icon={refreshOutline} />
+          Reset to Defaults
+        </IonButton>
       </IonContent>
     </IonPage>
   );
