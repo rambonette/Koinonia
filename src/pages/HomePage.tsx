@@ -134,13 +134,13 @@ const HomePage: React.FC = () => {
             <IonCardTitle>Join Existing List</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <IonItem lines="none">
-              <IonLabel position="floating">List Code</IonLabel>
-              <IonInput
-                value={joinCode}
-                onIonInput={e => setJoinCode(e.detail.value || '')}
-              />
-            </IonItem>
+            <IonInput
+              label="List Code"
+              labelPlacement="floating"
+              fill="outline"
+              value={joinCode}
+              onIonInput={e => setJoinCode(e.detail.value || '')}
+            />
             <IonButton
               expand="block"
               onClick={joinExistingList}
