@@ -7,8 +7,6 @@ import {
   IonContent,
   IonList,
   IonItem,
-  IonButtons,
-  IonBackButton,
   IonTextarea,
   IonNote,
   IonCard,
@@ -18,12 +16,14 @@ import {
   IonText,
   IonIcon,
   IonToggle,
-  IonButton
+  IonButton,
+  IonButtons
 } from '@ionic/react';
-import { refreshOutline, logoGithub, bugOutline, bulbOutline } from 'ionicons/icons';
+import { refreshOutline, logoGithub, bugOutline, bulbOutline, notificationsOutline, wifiOutline, globeOutline } from 'ionicons/icons';
 import { useServices } from '../contexts/ServicesContext';
 import { openUrl } from '../utils/browser';
 import { version as appVersion } from '../../package.json';
+import './SettingsPage.css';
 
 const SettingsPage: React.FC = () => {
   const { settings, sync } = useServices();
@@ -91,7 +91,7 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleReset = () => {
-    if (confirm('Reset all settings to defaults?')) {
+    if (confirm('Ripristinare tutte le impostazioni ai valori predefiniti?')) {
       settings.resetToDefaults();
       sync.disconnect();
       const defaults = settings.getSettings();
@@ -105,18 +105,22 @@ const SettingsPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar className="toolbar--branded">
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/" />
+            <img src="/koinonia_logo.png" alt="Koinonia" className="toolbar-logo" />
           </IonButtons>
-          <IonTitle>Settings</IonTitle>
+          <IonTitle>Impostazioni</IonTitle>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
-        <IonCard>
+      <IonContent className="page-content ion-padding">
+        {/* Updates card */}
+        <IonCard className="settings-card">
           <IonCardHeader>
-            <IonCardTitle>Updates</IonCardTitle>
+            <div className="settings-card__header">
+              <IonIcon icon={notificationsOutline} className="settings-card__icon" />
+              <IonCardTitle>Aggiornamenti</IonCardTitle>
+            </div>
           </IonCardHeader>
           <IonCardContent>
             <IonList>
@@ -125,7 +129,7 @@ const SettingsPage: React.FC = () => {
                   checked={checkForStableUpdates}
                   onIonChange={e => handleStableToggle(e.detail.checked)}
                 >
-                  Check for stable releases
+                  Controlla release stabili
                 </IonToggle>
               </IonItem>
               <IonItem>
@@ -133,23 +137,27 @@ const SettingsPage: React.FC = () => {
                   checked={checkForNightlyUpdates}
                   onIonChange={e => handleNightlyToggle(e.detail.checked)}
                 >
-                  Check for nightly releases
+                  Controlla release nightly
                 </IonToggle>
               </IonItem>
             </IonList>
             <IonNote color="medium">
-              <small>Updates are checked on app startup</small>
+              <small>Gli aggiornamenti vengono controllati all'avvio</small>
             </IonNote>
           </IonCardContent>
         </IonCard>
 
-        <IonCard>
+        {/* Signaling servers card */}
+        <IonCard className="settings-card">
           <IonCardHeader>
-            <IonCardTitle>Signaling Servers</IonCardTitle>
+            <div className="settings-card__header">
+              <IonIcon icon={wifiOutline} className="settings-card__icon" />
+              <IonCardTitle>Signaling Servers</IonCardTitle>
+            </div>
           </IonCardHeader>
           <IonCardContent>
             <IonText color="medium">
-              <p>WebRTC signaling servers (one per line)</p>
+              <p>Server WebRTC per la segnalazione (uno per riga)</p>
             </IonText>
             <IonTextarea
               value={signalingServers}
@@ -159,18 +167,22 @@ const SettingsPage: React.FC = () => {
               className="ion-margin-top"
             />
             <IonNote color="medium">
-              <small>Use ws:// for local, wss:// for secure connections</small>
+              <small>Usa ws:// per locale, wss:// per connessioni sicure</small>
             </IonNote>
           </IonCardContent>
         </IonCard>
 
-        <IonCard>
+        {/* ICE servers card */}
+        <IonCard className="settings-card">
           <IonCardHeader>
-            <IonCardTitle>ICE Servers</IonCardTitle>
+            <div className="settings-card__header">
+              <IonIcon icon={globeOutline} className="settings-card__icon" />
+              <IonCardTitle>ICE Servers</IonCardTitle>
+            </div>
           </IonCardHeader>
           <IonCardContent>
             <IonText color="medium">
-              <p>STUN/TURN servers (JSON format)</p>
+              <p>Server STUN/TURN (formato JSON)</p>
             </IonText>
             <IonTextarea
               value={iceServers}
@@ -180,40 +192,47 @@ const SettingsPage: React.FC = () => {
               className="ion-margin-top"
             />
             <IonNote color="medium">
-              <small>Must be valid JSON array of RTCIceServer objects</small>
+              <small>Deve essere un array JSON valido di oggetti RTCIceServer</small>
             </IonNote>
           </IonCardContent>
         </IonCard>
 
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>About</IonCardTitle>
-          </IonCardHeader>
+        {/* About card */}
+        <IonCard className="settings-card about-card">
+          <div className="about-card__hero">
+            <span className="about-card__app-name">Koinonia</span>
+            <span className="about-card__version">v{appVersion}</span>
+          </div>
           <IonCardContent className="ion-no-padding">
-            <div className="ion-text-center ion-padding">
-              <IonNote>Version {appVersion}</IonNote>
-            </div>
             <IonList lines="none">
               <IonItem button onClick={() => openUrl('https://github.com/rambonette/Koinonia')}>
                 <IonIcon slot="start" icon={logoGithub} />
-                View on GitHub
+                Vedi su GitHub
               </IonItem>
               <IonItem button onClick={() => openUrl('https://github.com/rambonette/Koinonia/issues/new?template=bug_report.yml')}>
                 <IonIcon slot="start" icon={bugOutline} />
-                Report a Bug
+                Segnala un Bug
               </IonItem>
               <IonItem button onClick={() => openUrl('https://github.com/rambonette/Koinonia/issues/new?template=feature_request.yml')}>
                 <IonIcon slot="start" icon={bulbOutline} />
-                Request a Feature
+                Richiedi una Funzione
               </IonItem>
             </IonList>
           </IonCardContent>
         </IonCard>
 
-        <IonButton expand="block" fill="outline" color="danger" onClick={handleReset}>
-          <IonIcon slot="start" icon={refreshOutline} />
-          Reset to Defaults
-        </IonButton>
+        {/* Reset card */}
+        <IonCard className="settings-card danger-card">
+          <IonCardContent>
+            <IonText color="medium">
+              <p>Ripristina tutte le impostazioni ai valori predefiniti.</p>
+            </IonText>
+            <IonButton expand="block" fill="outline" color="danger" onClick={handleReset} className="ion-margin-top">
+              <IonIcon slot="start" icon={refreshOutline} />
+              Ripristina Impostazioni
+            </IonButton>
+          </IonCardContent>
+        </IonCard>
       </IonContent>
     </IonPage>
   );

@@ -20,10 +20,11 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { IonList, IonItem, IonLabel, IonIcon, IonText } from '@ionic/react';
-import { apps } from 'ionicons/icons';
+import { IonList, IonIcon, IonText } from '@ionic/react';
+import { reorderTwoOutline, cartOutline } from 'ionicons/icons';
 import { HierarchicalItem } from '../hooks/useGroceryList';
 import SortableGroceryItem, { FlattenedItem } from './SortableGroceryItem';
+import './GroceryItemsTree.css';
 
 // Horizontal drag threshold (in pixels) to trigger nesting/unnesting
 const NEST_DRAG_THRESHOLD = 40;
@@ -236,13 +237,12 @@ const GroceryItemsTree: React.FC<GroceryItemsTreeProps> = ({
   if (flattenedItems.length === 0) {
     return (
       <IonList ref={listRef}>
-        <IonItem>
-          <IonLabel className="ion-text-center">
-            <IonText color="medium">
-              <p>No items yet. Add your first item above!</p>
-            </IonText>
-          </IonLabel>
-        </IonItem>
+        <div className="empty-list">
+          <IonIcon icon={cartOutline} className="empty-list__icon" color="medium" />
+          <IonText color="medium">
+            <p>La lista è vuota. Aggiungi il primo articolo!</p>
+          </IonText>
+        </div>
       </IonList>
     );
   }
@@ -274,10 +274,10 @@ const GroceryItemsTree: React.FC<GroceryItemsTreeProps> = ({
 
       <DragOverlay dropAnimation={null}>
         {activeId && (
-          <IonItem className="ion-no-padding" color="light">
-            <IonIcon icon={apps} slot="start" size="small" color="medium" className="ion-margin-start" />
-            <IonLabel>{flattenedItems.find(i => i.id === activeId)?.item.name}</IonLabel>
-          </IonItem>
+          <div className="drag-overlay-item">
+            <IonIcon icon={reorderTwoOutline} />
+            <span>{flattenedItems.find(i => i.id === activeId)?.item.name}</span>
+          </div>
         )}
       </DragOverlay>
     </DndContext>

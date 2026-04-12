@@ -1,0 +1,121 @@
+/* === GroceryListPage === */
+
+.status-toolbar {
+  --background: var(--koi-hero-gradient-subtle);
+  --border-color: transparent;
+}
+
+.add-item-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--koi-hero-gradient-subtle);
+  border-bottom: 1px solid var(--ion-border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.add-item-input {
+  flex: 1;
+  --background: rgba(255, 255, 255, 0.85);
+  --color: #1A1535;
+  --placeholder-color: #9CA3AF;
+  --placeholder-opacity: 1;
+  --border-radius: var(--koi-radius-input);
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+/* Force text color through Ionic shadow DOM */
+.add-item-input::part(native) {
+  color: #1A1535;
+  caret-color: var(--ion-color-primary);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  .add-item-input {
+    --background: rgba(30, 27, 60, 0.9);
+    --color: #EEECff;
+    --placeholder-color: #6B7280;
+  }
+
+  .add-item-input::part(native) {
+    color: #EEECff;
+    background: rgba(30, 27, 60, 0.9);
+  }
+}
+
+.add-item-btn {
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  flex-shrink: 0;
+}
+
+/* Loading screen */
+.loading-screen {
+  --background: var(--koi-hero-gradient-subtle);
+}
+
+.loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+}
+
+.loading-icon {
+  font-size: 3.5rem;
+}
+
+/* Popovers */
+.popover-list {
+  padding: 4px 0;
+  min-width: 200px;
+}
+
+.popover-item {
+  --min-height: 44px;
+  font-size: 0.95rem;
+}
+
+.popover-item ion-icon[slot="start"] {
+  margin-inline-end: 10px;
+  font-size: 1.1rem;
+}
+
+.popover-separator {
+  --min-height: 1px;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --border-color: var(--ion-border-color);
+  pointer-events: none;
+}
+
+/* QR modal */
+.qr-modal-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+}
+
+.qr-image {
+  max-width: 260px;
+  width: 100%;
+  border-radius: var(--koi-radius-card);
+  border: 2px solid var(--ion-border-color);
+  padding: 12px;
+}

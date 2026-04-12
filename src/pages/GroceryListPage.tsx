@@ -5,20 +5,19 @@ import {
   IonToolbar,
   IonTitle,
   IonContent,
-  IonItem,
   IonInput,
   IonButton,
   IonButtons,
   IonIcon,
   IonSpinner,
-  IonFab,
-  IonFabButton,
-  IonActionSheet,
   IonText,
   IonChip,
   IonLabel,
   IonAlert,
-  IonModal
+  IonModal,
+  IonPopover,
+  IonList,
+  IonItem
 } from '@ionic/react';
 import {
   peopleOutline,
@@ -30,8 +29,11 @@ import {
   arrowBackOutline,
   qrCodeOutline,
   closeOutline,
-  ellipsisVertical,
-  documentTextOutline
+  settingsOutline,
+  documentTextOutline,
+  cartOutline,
+  pencilOutline,
+  linkOutline
 } from 'ionicons/icons';
 import ImportExportModal from '../components/ImportExportModal';
 import GroceryItemsTree from '../components/GroceryItemsTree';
@@ -40,8 +42,9 @@ import { useGroceryList } from '../hooks/useGroceryList';
 import { useServices } from '../contexts/ServicesContext';
 import { useToast } from '../contexts/ToastContext';
 import { Share } from '@capacitor/share';
-import { recentListsUtils } from '../utils/recentLists';
+import { recentListsUtils, RecentList } from '../utils/recentLists';
 import QRCode from 'qrcode';
+import './GroceryListPage.css';
 
 const GroceryListPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -49,12 +52,29 @@ const GroceryListPage: React.FC = () => {
   const { deepLink } = useServices();
   const { showToast } = useToast();
   const [newItemName, setNewItemName] = useState('');
-  const [showActionSheet, setShowActionSheet] = useState(false);
   const [editingItem, setEditingItem] = useState<{ id: string; name: string } | null>(null);
   const listRef = useRef<HTMLIonListElement>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [showImportExportModal, setShowImportExportModal] = useState(false);
+  const [listMeta, setListMeta] = useState<RecentList | null>(null);
+  const [showRenameAlert, setShowRenameAlert] = useState(false);
+
+  // Popover events
+  const [sharePopoverEvent, setSharePopoverEvent] = useState<MouseEvent | null>(null);
+  const [settingsPopoverEvent, setSettingsPopoverEvent] = useState<MouseEvent | null>(null);
+
+  React.useEffect(() => {
+    const meta = recentListsUtils.getRecentLists().find(l => l.roomId === roomId) ?? null;
+    setListMeta(meta);
+  }, [roomId]);
+
+  const handleRename = (newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    recentListsUtils.updateListName(roomId, trimmed);
+    setListMeta(prev => prev ? { ...prev, name: trimmed } : { roomId, lastAccessed: Date.now(), name: trimmed });
+  };
 
   const {
     items,
@@ -91,64 +111,53 @@ const GroceryListPage: React.FC = () => {
     listRef.current?.closeSlidingItems();
   };
 
-  const handleShare = async () => {
+  const handleShareLink = async () => {
+    setSharePopoverEvent(null);
     const deepLinkUrl = deepLink.generateDeepLink(roomId);
-    const shareText = `Join my shopping list on Koinonia! Code: ${roomId}\n${deepLinkUrl}`;
-
+    const shareText = `Unisciti alla mia lista su Koinonia! Codice: ${roomId}\n${deepLinkUrl}`;
     try {
-      // Check if Share API is available
       const canShare = await Share.canShare();
-
       if (canShare.value) {
-        await Share.share({
-          title: 'Join my shopping list',
-          text: shareText,
-          dialogTitle: 'Share shopping list'
-        });
+        await Share.share({ title: 'Unisciti alla lista', text: shareText, dialogTitle: 'Condividi lista' });
       } else {
-        // Fallback: copy to clipboard
         await navigator.clipboard.writeText(shareText);
-        showToast('Link copied to clipboard!');
+        showToast('Link copiato!');
       }
-    } catch (error) {
-      console.error('Error sharing:', error);
-      // Fallback: try clipboard
+    } catch {
       try {
         await navigator.clipboard.writeText(shareText);
-        showToast('Link copied to clipboard!');
+        showToast('Link copiato!');
       } catch {
-        showToast(`Share code: ${roomId}`);
+        showToast(`Codice: ${roomId}`);
       }
     }
   };
 
-  const generateQRCode = async () => {
+  const handleShowQR = async () => {
+    setSharePopoverEvent(null);
     try {
       const deepLinkUrl = deepLink.generateDeepLink(roomId);
       const url = await QRCode.toDataURL(deepLinkUrl, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#ffffff'
-        }
+        width: 300, margin: 2,
+        color: { dark: '#000000', light: '#ffffff' }
       });
       setQrCodeDataUrl(url);
       setShowQRModal(true);
     } catch (err) {
       console.error(err);
-      showToast('Could not generate QR Code');
+      showToast('Impossibile generare il QR Code');
     }
   };
 
   if (loading) {
     return (
       <IonPage>
-        <IonContent className="ion-padding ion-text-center">
-          <IonSpinner />
-          <IonText>
-            <p>Connecting to network...</p>
-          </IonText>
+        <IonContent className="loading-screen ion-text-center">
+          <div className="loading-inner">
+            <IonIcon icon={cartOutline} className="loading-icon" color="primary" />
+            <IonSpinner name="crescent" color="primary" />
+            <IonText color="medium"><p>Connessione alla rete...</p></IonText>
+          </div>
         </IonContent>
       </IonPage>
     );
@@ -157,18 +166,29 @@ const GroceryListPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar className="toolbar--branded">
           <IonButtons slot="start">
             <IonButton onClick={() => history.goBack()}>
               <IonIcon slot="icon-only" icon={arrowBackOutline} />
             </IonButton>
+            <img src="/koinonia_logo.png" alt="Koinonia" className="toolbar-logo" />
           </IonButtons>
-          <IonTitle>Shopping List</IonTitle>
+          <IonTitle>{listMeta?.name ?? 'Lista della Spesa'}</IonTitle>
+          <IonButtons slot="end">
+            {/* Share popover trigger */}
+            <IonButton onClick={(e) => setSharePopoverEvent(e.nativeEvent)}>
+              <IonIcon slot="icon-only" icon={shareOutline} />
+            </IonButton>
+            {/* Settings popover trigger */}
+            <IonButton onClick={(e) => setSettingsPopoverEvent(e.nativeEvent)}>
+              <IonIcon slot="icon-only" icon={settingsOutline} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
-        <IonToolbar color="light">
+        <IonToolbar className="status-toolbar">
           <IonChip slot="start" color={connected ? 'success' : 'warning'} outline>
             <IonIcon icon={connected ? cloudOutline : cloudOfflineOutline} />
-            <IonLabel>{connected ? 'Connected' : 'Connecting...'}</IonLabel>
+            <IonLabel>{connected ? 'Connesso' : 'Connessione...'}</IonLabel>
           </IonChip>
           <IonChip slot="start" color={peerCount > 0 ? 'success' : 'medium'} outline>
             <IonIcon icon={peopleOutline} />
@@ -177,124 +197,114 @@ const GroceryListPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent>
-        {/* Add item input */}
-        <IonItem lines="full">
+      <IonContent className="page-content">
+        {/* Add item input bar */}
+        <div className="add-item-bar">
           <IonInput
+            className="add-item-input"
             value={newItemName}
-            placeholder="Add new item..."
+            placeholder="Aggiungi un articolo..."
             onIonInput={e => setNewItemName(e.detail.value || '')}
             onKeyPress={e => e.key === 'Enter' && handleAddItem()}
           />
           <IonButton
-            slot="end"
+            className="add-item-btn"
             onClick={handleAddItem}
             disabled={!newItemName.trim()}
-            fill="solid"
+            shape="round"
+            color="primary"
           >
-            <IonIcon icon={addOutline} />
+            <IonIcon slot="icon-only" icon={addOutline} />
           </IonButton>
-        </IonItem>
+        </div>
 
         {/* Grocery items list */}
-          <GroceryItemsTree
-            items={hierarchicalItems}
-            onToggle={toggleItem}
-            onEdit={(id, name) => setEditingItem({ id, name })}
-            onDelete={handleRemoveItem}
-            onSetParent={setItemParent}
-            onReorderPosition={reorderItem}
-            listRef={listRef}
-          />
+        <GroceryItemsTree
+          items={hierarchicalItems}
+          onToggle={toggleItem}
+          onEdit={(id, name) => setEditingItem({ id, name })}
+          onDelete={handleRemoveItem}
+          onSetParent={setItemParent}
+          onReorderPosition={reorderItem}
+          listRef={listRef}
+        />
 
-        {/* Floating action button for options */}
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => setShowActionSheet(true)}>
-            <IonIcon icon={ellipsisVertical} />
-          </IonFabButton>
-        </IonFab>
+        {/* ── Share popover ── */}
+        <IonPopover
+          isOpen={!!sharePopoverEvent}
+          event={sharePopoverEvent ?? undefined}
+          onDidDismiss={() => setSharePopoverEvent(null)}
+          dismissOnSelect
+        >
+          <IonList lines="none" className="popover-list">
+            <IonItem button detail={false} onClick={handleShareLink} className="popover-item">
+              <IonIcon slot="start" icon={linkOutline} color="primary" />
+              <IonLabel>Condividi con link</IonLabel>
+            </IonItem>
+            <IonItem button detail={false} onClick={handleShowQR} className="popover-item">
+              <IonIcon slot="start" icon={qrCodeOutline} color="primary" />
+              <IonLabel>Mostra QR Code</IonLabel>
+            </IonItem>
+          </IonList>
+        </IonPopover>
+
+        {/* ── Settings popover ── */}
+        <IonPopover
+          isOpen={!!settingsPopoverEvent}
+          event={settingsPopoverEvent ?? undefined}
+          onDidDismiss={() => setSettingsPopoverEvent(null)}
+          dismissOnSelect
+        >
+          <IonList lines="none" className="popover-list">
+            <IonItem button detail={false} className="popover-item" onClick={() => { setSettingsPopoverEvent(null); setShowRenameAlert(true); }}>
+              <IonIcon slot="start" icon={pencilOutline} color="primary" />
+              <IonLabel>Rinomina</IonLabel>
+            </IonItem>
+            <IonItem button detail={false} className="popover-item" onClick={() => { setSettingsPopoverEvent(null); setShowImportExportModal(true); }}>
+              <IonIcon slot="start" icon={documentTextOutline} color="primary" />
+              <IonLabel>Importa &amp; Esporta</IonLabel>
+            </IonItem>
+            <IonItem lines="full" className="popover-separator" />
+            <IonItem button detail={false} className="popover-item popover-item--danger" onClick={() => { setSettingsPopoverEvent(null); clearList(); }}>
+              <IonIcon slot="start" icon={trashOutline} color="danger" />
+              <IonLabel color="danger">Cancella tutto</IonLabel>
+            </IonItem>
+            <IonItem button detail={false} className="popover-item popover-item--danger" onClick={() => { setSettingsPopoverEvent(null); clearList(); recentListsUtils.removeRecentList(roomId); history.goBack(); }}>
+              <IonIcon slot="start" icon={trashOutline} color="danger" />
+              <IonLabel color="danger">Elimina lista</IonLabel>
+            </IonItem>
+          </IonList>
+        </IonPopover>
 
         {/* Edit Item Alert */}
         <IonAlert
           isOpen={!!editingItem}
-          header="Edit Item"
-          inputs={[
-            {
-              name: 'name',
-              type: 'text',
-              placeholder: 'Item name',
-              value: editingItem?.name
-            }
-          ]}
+          header="Modifica Articolo"
+          inputs={[{ name: 'name', type: 'text', placeholder: 'Nome articolo', value: editingItem?.name }]}
           buttons={[
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              handler: () => setEditingItem(null)
-            },
-            {
-              text: 'Save',
-              handler: (data) => {
-                if (editingItem) {
-                  handleEditItem(editingItem.id, data.name);
-                }
-              }
-            }
+            { text: 'Annulla', role: 'cancel', handler: () => setEditingItem(null) },
+            { text: 'Salva', handler: (data) => { if (editingItem) handleEditItem(editingItem.id, data.name); } }
           ]}
           onDidDismiss={() => setEditingItem(null)}
         />
 
-        {/* Action sheet for list actions */}
-        <IonActionSheet
-          isOpen={showActionSheet}
-          onDidDismiss={() => setShowActionSheet(false)}
+        {/* Rename list alert */}
+        <IonAlert
+          isOpen={showRenameAlert}
+          header="Rinomina lista"
+          inputs={[{ name: 'name', type: 'text', placeholder: 'Nome della lista', value: listMeta?.name ?? '' }]}
           buttons={[
-            {
-              text: 'Share via Link',
-              icon: shareOutline,
-              handler: handleShare
-            },
-            {
-              text: 'Show QR Code',
-              icon: qrCodeOutline,
-              handler: generateQRCode
-            },
-            {
-              text: 'Import & Export',
-              icon: documentTextOutline,
-              handler: () => setShowImportExportModal(true)
-            },
-            {
-              text: 'Clear All Items',
-              role: 'destructive',
-              icon: trashOutline,
-              handler: () => {
-                clearList();
-              }
-            },
-            {
-              text: 'Delete List & Go Back',
-              role: 'destructive',
-              icon: trashOutline,
-              handler: () => {
-                clearList();
-                recentListsUtils.removeRecentList(roomId);
-                history.goBack();
-              }
-            },
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              icon: closeOutline
-            }
+            { text: 'Annulla', role: 'cancel', handler: () => setShowRenameAlert(false) },
+            { text: 'Salva', handler: (data) => { handleRename(data.name); setShowRenameAlert(false); } }
           ]}
+          onDidDismiss={() => setShowRenameAlert(false)}
         />
 
         {/* QR Code Modal */}
         <IonModal isOpen={showQRModal} onDidDismiss={() => setShowQRModal(false)}>
           <IonHeader>
-            <IonToolbar>
-              <IonTitle>Share List</IonTitle>
+            <IonToolbar className="toolbar--branded">
+              <IonTitle>Condividi Lista</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowQRModal(false)}>
                   <IonIcon icon={closeOutline} />
@@ -303,16 +313,10 @@ const GroceryListPage: React.FC = () => {
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding ion-text-center">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <IonText>
-                <h3>Scan to Join List</h3>
-              </IonText>
-              {qrCodeDataUrl && (
-                <img src={qrCodeDataUrl} alt="List QR Code" style={{ maxWidth: '100%', border: '1px solid #ccc', padding: '10px', borderRadius: '8px' }} />
-              )}
-              <IonText color="medium" className="ion-margin-top">
-                <p>Code: {roomId}</p>
-              </IonText>
+            <div className="qr-modal-inner">
+              <IonText><h3>Scansiona per unirti</h3></IonText>
+              {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="List QR Code" className="qr-image" />}
+              <IonText color="medium" className="ion-margin-top"><p>Codice: {roomId}</p></IonText>
             </div>
           </IonContent>
         </IonModal>

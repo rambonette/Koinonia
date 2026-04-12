@@ -1,0 +1,69 @@
+/* === SortableGroceryItem === */
+
+.grocery-item {
+  --background: #ffffff;
+  --border-color: #ECEAFF;
+  --padding-start: calc(8px + var(--koi-item-indent, 0px));
+  transition: opacity 0.2s ease;
+  animation: slideUpFade 0.3s ease both;
+}
+
+.grocery-item--child {
+  --background: #F5F3FF;
+  --border-color: #E0DEFF;
+  border-left: 3px solid rgba(123, 97, 255, 0.35);
+}
+
+/* Checked state */
+.grocery-item--checked ion-label {
+  text-decoration: line-through;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.grocery-item ion-checkbox {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.grocery-item--checked ion-checkbox {
+  transform: scale(0.9);
+}
+
+/* Menu button */
+.item-menu-btn {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.item-menu-btn:hover,
+.item-menu-btn:active {
+  opacity: 1;
+}
+
+/* Popover menu */
+.item-menu-list {
+  padding: 4px 0;
+}
+
+.item-menu-option {
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --min-height: 44px;
+  font-size: 0.92rem;
+}
+
+/* ── Dark mode ── */
+@media (prefers-color-scheme: dark) {
+  .grocery-item {
+    --background: #1E1B30;
+    --border-color: #2A2645;
+  }
+
+  .grocery-item--child {
+    --background: #252040;
+    --border-color: #322D55;
+    border-left: 3px solid rgba(155, 133, 255, 0.4);
+  }
+}

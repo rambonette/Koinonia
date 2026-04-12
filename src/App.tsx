@@ -1,9 +1,19 @@
 import React, { useEffect } from 'react';
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import {
+  IonApp,
+  IonTabs,
+  IonTabBar,
+  IonTabButton,
+  IonRouterOutlet,
+  IonIcon,
+  IonLabel,
+  setupIonicReact
+} from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { homeOutline, settingsOutline, listOutline } from 'ionicons/icons';
 
 import { ServicesProvider } from './contexts/ServicesContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -12,6 +22,7 @@ import UpdateChecker from './components/UpdateChecker';
 import HomePage from './pages/HomePage';
 import GroceryListPage from './pages/GroceryListPage';
 import SettingsPage from './pages/SettingsPage';
+import ListsPage from './pages/ListsPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -55,20 +66,38 @@ const DeepLinkListener: React.FC = () => {
 };
 
 /**
- * AppContent component with routing
- * Must be inside ServicesProvider to access services
+ * AppContent component with routing.
+ * All routes are inside IonTabs so the tab bar is always visible.
  */
 const AppContent: React.FC = () => {
   return (
     <IonReactRouter>
       <DeepLinkListener />
       <UpdateChecker />
-      <IonRouterOutlet>
-        <Route path="/home" component={HomePage} exact />
-        <Route path="/settings" component={SettingsPage} exact />
-        <Route path="/list/:roomId" component={GroceryListPage} exact />
-        <Redirect exact from="/" to="/home" />
-      </IonRouterOutlet>
+      <IonTabs>
+        <IonRouterOutlet>
+          <Route path="/home" component={HomePage} exact />
+          <Route path="/lists" component={ListsPage} exact />
+          <Route path="/list/:roomId" component={GroceryListPage} exact />
+          <Route path="/settings" component={SettingsPage} exact />
+          <Redirect exact from="/" to="/home" />
+        </IonRouterOutlet>
+
+        <IonTabBar slot="bottom">
+          <IonTabButton tab="home" href="/home">
+            <IonIcon icon={homeOutline} />
+            <IonLabel>Home</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="lists" href="/lists">
+            <IonIcon icon={listOutline} />
+            <IonLabel>Liste</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="settings" href="/settings">
+            <IonIcon icon={settingsOutline} />
+            <IonLabel>Impostazioni</IonLabel>
+          </IonTabButton>
+        </IonTabBar>
+      </IonTabs>
     </IonReactRouter>
   );
 };
@@ -82,7 +111,7 @@ const App: React.FC = () => {
     // Configure status bar for Android/iOS - don't overlay to avoid notch issues
     if (Capacitor.isNativePlatform()) {
       StatusBar.setOverlaysWebView({ overlay: false });
-      StatusBar.setStyle({ style: Style.Dark });
+      StatusBar.setStyle({ style: Style.Light });
     }
   }, []);
 

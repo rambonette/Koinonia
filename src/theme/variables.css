@@ -1,2 +1,314 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* ===================================================
+   KOINONIA DESIGN TOKENS
+   For information on how to create your own theme, please refer to:
+   http://ionicframework.com/docs/theming/
+   =================================================== */
+
+/* ---- Typography ---- */
+:root {
+  --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --koi-font-heading: 'Space Grotesk', 'Inter', sans-serif;
+}
+
+/* ---- Brand Colors ---- */
+:root {
+  --koi-purple: #7B61FF;
+  --koi-blue:   #5A6BFF;
+  --koi-teal:   #2ED3B7;
+}
+
+/* ---- Base Ionic Palette Overrides (Light Mode) ---- */
+:root {
+
+  /* Primary: Purple */
+  --ion-color-primary:              #7B61FF;
+  --ion-color-primary-rgb:          123, 97, 255;
+  --ion-color-primary-contrast:     #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade:        #6c56e0;
+  --ion-color-primary-tint:         #8871ff;
+
+  /* Secondary: Blue */
+  --ion-color-secondary:              #5A6BFF;
+  --ion-color-secondary-rgb:          90, 107, 255;
+  --ion-color-secondary-contrast:     #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade:        #4f5ee0;
+  --ion-color-secondary-tint:         #6b7aff;
+
+  /* Tertiary / Success: Teal */
+  --ion-color-tertiary:              #2ED3B7;
+  --ion-color-tertiary-rgb:          46, 211, 183;
+  --ion-color-tertiary-contrast:     #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade:        #29baa1;
+  --ion-color-tertiary-tint:         #43d7be;
+
+  --ion-color-success:              #2ED3B7;
+  --ion-color-success-rgb:          46, 211, 183;
+  --ion-color-success-contrast:     #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade:        #29baa1;
+  --ion-color-success-tint:         #43d7be;
+
+  /* Warning */
+  --ion-color-warning:              #FFB830;
+  --ion-color-warning-rgb:          255, 184, 48;
+  --ion-color-warning-contrast:     #1A1A2E;
+  --ion-color-warning-contrast-rgb: 26, 26, 46;
+  --ion-color-warning-shade:        #e0a22a;
+  --ion-color-warning-tint:         #ffbf45;
+
+  /* Danger */
+  --ion-color-danger:              #E84855;
+  --ion-color-danger-rgb:          232, 72, 85;
+  --ion-color-danger-contrast:     #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade:        #cc3f4b;
+  --ion-color-danger-tint:         #ea5a66;
+
+  /* Light */
+  --ion-color-light:          #F4F3FF;
+  --ion-color-light-rgb:      244, 243, 255;
+  --ion-color-light-contrast: #1A1535;
+  --ion-color-light-shade:    #e8e6f5;
+  --ion-color-light-tint:     #f6f5ff;
+
+  /* Medium */
+  --ion-color-medium:          #9CA3AF;
+  --ion-color-medium-rgb:      156, 163, 175;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-shade:    #8a909c;
+  --ion-color-medium-tint:     #a6acb7;
+
+  /* Dark */
+  --ion-color-dark:          #1A1535;
+  --ion-color-dark-rgb:      26, 21, 53;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-shade:    #110e24;
+  --ion-color-dark-tint:     #2d2749;
+
+  /* Page & Surface backgrounds */
+  --ion-background-color:     #F4F3FF;
+  --ion-background-color-rgb: 244, 243, 255;
+
+  --ion-item-background: #FFFFFF;
+  --ion-card-background: #FFFFFF;
+
+  /* Text */
+  --ion-text-color:     #1A1535;
+  --ion-text-color-rgb: 26, 21, 53;
+
+  /* Toolbar */
+  --ion-toolbar-background:   #FFFFFF;
+  --ion-toolbar-color:        #1A1535;
+  --ion-toolbar-border-color: #E0DEFF;
+
+  /* Tab bar */
+  --ion-tab-bar-background:       #FFFFFF;
+  --ion-tab-bar-border-color:     #E0DEFF;
+  --ion-tab-bar-color:            #9CA3AF;
+  --ion-tab-bar-color-selected:   #7B61FF;
+
+  /* Border */
+  --ion-border-color: #E0DEFF;
+
+  /* --- Custom Koinonia tokens --- */
+  --koi-radius-card:  16px;
+  --koi-radius-item:  12px;
+  --koi-radius-input: 10px;
+  --koi-radius-chip:  20px;
+  --koi-radius-xl:    28px;
+
+  --koi-shadow-card: 0 2px 12px rgba(123, 97, 255, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+  --koi-shadow-fab:  0 4px 20px rgba(123, 97, 255, 0.40);
+  --koi-shadow-item: 0 1px 6px rgba(0, 0, 0, 0.05);
+
+  --koi-spacing-xs: 4px;
+  --koi-spacing-sm: 8px;
+  --koi-spacing-md: 16px;
+  --koi-spacing-lg: 24px;
+  --koi-spacing-xl: 32px;
+
+  /* Purple → Blue gradient (primary actions) */
+  --koi-hero-gradient:        linear-gradient(135deg, #7B61FF 0%, #5A6BFF 100%);
+  /* Blue → Teal gradient (accent) */
+  --koi-accent-gradient:      linear-gradient(135deg, #5A6BFF 0%, #2ED3B7 100%);
+  /* Subtle tinted background */
+  --koi-hero-gradient-subtle: linear-gradient(135deg, #F0EEFF 0%, #EBF0FF 100%);
+  /* Banner background — deep purple/blue brand color */
+  --koi-banner-gradient:      linear-gradient(135deg, #7B61FF 0%, #5A6BFF 100%);
+
+  --koi-depth-indent: 24px;
+}
+
+/* ---- Dark Mode Overrides ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ion-color-primary:       #9B85FF;
+    --ion-color-primary-shade: #8872e0;
+    --ion-color-primary-tint:  #a994ff;
+
+    --ion-background-color:     #0E0C1A;
+    --ion-background-color-rgb: 14, 12, 26;
+
+    --ion-item-background: #1A1830;
+    --ion-card-background: #1A1830;
+
+    --ion-text-color:     #EEECff;
+    --ion-text-color-rgb: 238, 236, 255;
+
+    --ion-toolbar-background:   #1A1830;
+    --ion-toolbar-color:        #EEECff;
+    --ion-toolbar-border-color: #2A2845;
+
+    --ion-border-color: #2A2845;
+
+    --ion-tab-bar-background:     #1A1830;
+    --ion-tab-bar-border-color:   #2A2845;
+    --ion-tab-bar-color:          #6B7280;
+    --ion-tab-bar-color-selected: #9B85FF;
+
+    --koi-shadow-card:          0 2px 16px rgba(0, 0, 0, 0.35);
+    --koi-shadow-fab:           0 4px 20px rgba(123, 97, 255, 0.5);
+    --koi-hero-gradient-subtle: linear-gradient(135deg, #1E1A3A 0%, #141B3A 100%);
+    --koi-banner-gradient:      linear-gradient(135deg, #9B85FF 0%, #7B8FFF 100%);
+  }
+}
+
+/* ---- Global Component Style Overrides ---- */
+
+/* ── Global animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+ion-card {
+  border-radius: var(--koi-radius-card) !important;
+  box-shadow: var(--koi-shadow-card) !important;
+  margin: var(--koi-spacing-md) var(--koi-spacing-md) !important;
+  transition: box-shadow 0.2s ease, transform 0.18s ease !important;
+}
+
+ion-card[button]:active {
+  transform: scale(0.98) !important;
+  box-shadow: var(--koi-shadow-item) !important;
+}
+
+ion-card-title {
+  font-family: var(--koi-font-heading);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+ion-button {
+  --border-radius: var(--koi-radius-input);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+ion-checkbox {
+  --border-radius: 6px;
+  --size: 22px;
+  --checkbox-background-checked: var(--ion-color-primary);
+  --border-color: var(--ion-color-medium);
+  --border-color-checked: var(--ion-color-primary);
+  --checkmark-color: white;
+}
+
+ion-toggle {
+  --handle-background-checked: white;
+  --track-background-checked: var(--ion-color-primary);
+}
+
+ion-title {
+  font-family: var(--koi-font-heading);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+ion-item {
+  --border-color: var(--ion-border-color);
+}
+
+ion-fab-button {
+  --box-shadow: var(--koi-shadow-fab);
+  --background: var(--koi-hero-gradient);
+  --background-activated: var(--ion-color-primary-shade);
+}
+
+ion-segment {
+  --background: var(--ion-color-light);
+}
+
+ion-segment-button {
+  --indicator-color: var(--ion-color-primary);
+  font-weight: 600;
+}
+
+ion-back-button {
+  --color: var(--ion-color-primary);
+}
+
+/* ── Shared gradient background for all pages ── */
+.page-content {
+  --background: linear-gradient(180deg, #F0EEFF 0%, #F4F3FF 45%, #EBF0FF 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .page-content {
+    --background: linear-gradient(180deg, #131028 0%, #0E0C1A 45%, #0D1228 100%);
+  }
+}
+
+/* ── Branded toolbar — same surface as tab bar ── */
+.toolbar--branded {
+  --background: var(--ion-tab-bar-background);
+  --color: var(--ion-text-color);
+  --border-color: var(--ion-tab-bar-border-color);
+  --min-height: 60px;
+}
+
+/* Icon/button color inside branded toolbar */
+.toolbar--branded ion-button,
+.toolbar--branded ion-icon,
+.toolbar--branded ion-back-button {
+  color: var(--ion-color-primary);
+}
+
+/* Title uses heading font and dark text */
+.toolbar--branded ion-title {
+  color: var(--ion-text-color);
+  font-family: var(--koi-font-heading);
+}
+
+/* ── Toolbar logo ── */
+.toolbar-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 10px;
+  margin-inline-start: 4px;
+  display: block;
+}
+
+ion-chip {
+  border-radius: var(--koi-radius-chip);
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.item-checked ion-label {
+  opacity: 0.5;
+}
