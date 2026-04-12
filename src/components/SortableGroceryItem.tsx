@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -7,18 +7,20 @@ import {
   IonCheckbox,
   IonIcon,
   IonButton,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption
+  IonPopover,
+  IonList,
+  IonItem as IonPopoverItem
 } from '@ionic/react';
 import {
   chevronDownOutline,
   chevronForwardOutline,
   createOutline,
   trashOutline,
-  appsOutline
+  reorderTwoOutline,
+  ellipsisVerticalOutline
 } from 'ionicons/icons';
 import { GroceryItem } from '../interfaces/IStorageService';
+import './SortableGroceryItem.css';
 
 export interface FlattenedItem {
   id: string;
@@ -57,32 +59,28 @@ const SortableGroceryItem: React.FC<SortableGroceryItemProps> = ({
     isDragging,
   } = useSortable({ id: item.id });
 
-  const slidingRef = useRef<HTMLIonItemSlidingElement>(null);
+  const [menuEvent, setMenuEvent] = useState<MouseEvent | null>(null);
 
   const itemClasses = [
-    item.item.checked ? 'item-checked' : '',
-    item.depth > 0 ? 'ion-padding-start' : '',
-    isDragging ? 'item-dragging' : '',
+    'grocery-item',
+    item.item.checked ? 'grocery-item--checked' : '',
+    item.depth > 0 ? 'grocery-item--child' : '',
   ].filter(Boolean).join(' ');
 
-  const combinedRef = (node: HTMLIonItemSlidingElement | null) => {
-    slidingRef.current = node;
-    setNodeRef(node);
-  };
-
   return (
-    <IonItemSliding
-      ref={combinedRef}
-      disabled={isDragging}
-      className={itemClasses}
-      style={{
-        transform: CSS.Translate.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-      }}
-    >
-      <IonItem lines="full">
-        {/* Drag Handle - Left side */}
+    <>
+      <IonItem
+        ref={setNodeRef}
+        lines="full"
+        className={itemClasses}
+        style={{
+          transform: CSS.Translate.toString(transform),
+          transition,
+          opacity: isDragging ? 0.5 : 1,
+          '--koi-item-indent': `${item.depth * 24}px`,
+        } as React.CSSProperties}
+      >
+        {/* Drag Handle */}
         <IonButton
           fill="clear"
           slot="start"
@@ -90,7 +88,7 @@ const SortableGroceryItem: React.FC<SortableGroceryItemProps> = ({
           {...attributes}
           {...listeners}
         >
-          <IonIcon slot="icon-only" icon={appsOutline} color="medium" size="medium" />
+          <IonIcon slot="icon-only" icon={reorderTwoOutline} color="medium" />
         </IonButton>
 
         {/* Checkbox */}
@@ -102,19 +100,16 @@ const SortableGroceryItem: React.FC<SortableGroceryItemProps> = ({
         />
 
         {/* Item name */}
-        <IonLabel className={item.item.checked ? 'ion-text-strike' : ''}>
+        <IonLabel>
           {item.item.name}
         </IonLabel>
 
-        {/* Collapse button for parents - Right side */}
+        {/* Collapse button */}
         {hasChildren && (
           <IonButton
             fill="clear"
             slot="end"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCollapse();
-            }}
+            onClick={(e) => { e.stopPropagation(); onCollapse(); }}
           >
             <IonIcon
               slot="icon-only"
@@ -123,17 +118,47 @@ const SortableGroceryItem: React.FC<SortableGroceryItemProps> = ({
             />
           </IonButton>
         )}
+
+        {/* Menu button */}
+        <IonButton
+          fill="clear"
+          slot="end"
+          className="item-menu-btn"
+          onClick={(e) => { e.stopPropagation(); setMenuEvent(e.nativeEvent); }}
+        >
+          <IonIcon slot="icon-only" icon={ellipsisVerticalOutline} color="medium" />
+        </IonButton>
       </IonItem>
 
-      <IonItemOptions side="end">
-        <IonItemOption color="primary" onClick={() => { onEdit(); slidingRef.current?.close(); }}>
-          <IonIcon icon={createOutline} />
-        </IonItemOption>
-        <IonItemOption color="danger" onClick={() => { onDelete(); slidingRef.current?.close(); }}>
-          <IonIcon icon={trashOutline} />
-        </IonItemOption>
-      </IonItemOptions>
-    </IonItemSliding>
+      {/* Dropdown menu */}
+      <IonPopover
+        isOpen={!!menuEvent}
+        event={menuEvent ?? undefined}
+        onDidDismiss={() => setMenuEvent(null)}
+        dismissOnSelect
+      >
+        <IonList lines="none" className="item-menu-list">
+          <IonPopoverItem
+            button
+            detail={false}
+            className="item-menu-option"
+            onClick={() => { onEdit(); setMenuEvent(null); }}
+          >
+            <IonIcon slot="start" icon={createOutline} color="primary" />
+            <IonLabel>Rinomina</IonLabel>
+          </IonPopoverItem>
+          <IonPopoverItem
+            button
+            detail={false}
+            className="item-menu-option"
+            onClick={() => { onDelete(); setMenuEvent(null); }}
+          >
+            <IonIcon slot="start" icon={trashOutline} color="danger" />
+            <IonLabel color="danger">Cancella</IonLabel>
+          </IonPopoverItem>
+        </IonList>
+      </IonPopover>
+    </>
   );
 };
 

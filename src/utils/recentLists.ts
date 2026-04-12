@@ -6,6 +6,7 @@
 export interface RecentList {
   roomId: string;
   lastAccessed: number;
+  name?: string;
   itemCount?: number;
 }
 
@@ -16,21 +17,22 @@ export const recentListsUtils = {
   /**
    * Add or update a list in recent history
    */
-  addRecentList(roomId: string): void {
+  addRecentList(roomId: string, name?: string): void {
     const recent = this.getRecentLists();
 
-    // Remove if already exists
+    // Preserve existing name if not provided
+    const existing = recent.find(item => item.roomId === roomId);
+    const resolvedName = name ?? existing?.name;
+
     const filtered = recent.filter(item => item.roomId !== roomId);
 
-    // Add to front
     filtered.unshift({
       roomId,
-      lastAccessed: Date.now()
+      lastAccessed: Date.now(),
+      ...(resolvedName ? { name: resolvedName } : {}),
     });
 
-    // Keep only MAX_RECENT items
     const trimmed = filtered.slice(0, MAX_RECENT);
-
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
   },
 
@@ -41,13 +43,23 @@ export const recentListsUtils = {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) return [];
-
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
       console.error('Failed to load recent lists:', error);
       return [];
     }
+  },
+
+  /**
+   * Update the display name of a list
+   */
+  updateListName(roomId: string, name: string): void {
+    const recent = this.getRecentLists();
+    const updated = recent.map(item =>
+      item.roomId === roomId ? { ...item, name } : item
+    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   },
 
   /**
